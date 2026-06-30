@@ -1,0 +1,133 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ============================================================
+# Virtual Environment
+# ============================================================
+venv/
+.venv/
+env/
+ENV/
+
+# ============================================================
+# Environment Variables
+# ============================================================
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# Logs
+# ============================================================
+logs/*.log
+*.log
+
+# Keep log directory
+!logs/.gitkeep
+
+# ============================================================
+# Testing
+# ============================================================
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+.cache/
+
+# ============================================================
+# Type Checkers / Linters
+# ============================================================
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# ============================================================
+# Jupyter
+# ============================================================
+.ipynb_checkpoints/
+
+# ============================================================
+# Build / Distribution
+# ============================================================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ============================================================
+# IDE
+# ============================================================
+.vscode/
+.idea/
+
+# ============================================================
+# OS Files
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Runtime Data
+# ============================================================
+secondbrain/data/raw/*
+!secondbrain/data/raw/.gitkeep
+
+secondbrain/data/processed/*
+!secondbrain/data/processed/.gitkeep
+
+# ============================================================
+# Local Databases / Storage
+# ============================================================
+mongodb_data/
+qdrant_data/
+
+# ============================================================
+# Docker
+# ============================================================
+docker-compose.override.yml
+
+# ============================================================
+# Temporary Files
+# ============================================================
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ============================================================
+# Generated Trees / Reports
+# ============================================================
+tree_output.txt
+final_tree.txt
+
+# ============================================================
+# PDFs used for testing
+# ============================================================
+*.pdf
+
+# Keep documentation PDFs if you intentionally add them later
+#!docs/*.pdf
+
+# Temporary Reports
+final_tree.txt
+prints.txt
+prints_audit.txt
+
+# Local SQLite databases (if you ever add them)
+*.db
+*.sqlite3
+
+# Internal development documents
+secondbrain/docs/bugs_found.md
+secondbrain/docs/code_review.md
+secondbrain/docs/phase4_testing_report.md
+secondbrain/docs/refactor_step_3_1.md
+secondbrain/docs/step_3_5_production_hardening.md
+secondbrain/docs/testing_notes.md
