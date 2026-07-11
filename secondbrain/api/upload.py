@@ -5,7 +5,8 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, HTTPException
 import uuid
 
-from secondbrain.queues.client import queue
+# from secondbrain.queues.client import queue -> removing so that we can use free render 
+# free render doesn't support background worker 
 from secondbrain.queues.jobs import process_pdf
 from secondbrain.core.logger import get_logger
 import time
@@ -31,18 +32,35 @@ async def upload_file(file: UploadFile):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    logger.info(f"📤 Queuing PDF for background processing: {unique_filename}")
+    # logger.info(f"📤 Queuing PDF for background processing: {unique_filename}")
    
-    job = queue.enqueue(
-    process_pdf,
-    str(file_path)
-    )
+    # job = queue.enqueue(
+    # process_pdf,
+    # str(file_path)
+    # )
     
-    execution_time = time.time() - start_time
-    logger.info(f"Request completed in {execution_time:.2f} seconds")
+    # execution_time = time.time() - start_time
+    # logger.info(f"Request completed in {execution_time:.2f} seconds")
 
-    return {
-        "job_id": job.id,
-        "status": job.get_status(),
-        "message": "PDF queued for processing."
-    }
+    # return {
+    #     "job_id": job.id,
+    #     "status": job.get_status(),
+    #     "message": "PDF queued for processing."
+    # }
+
+    logger.info(f"📤 Processing PDF synchronously: {unique_filename}")
+
+    try:
+        process_pdf(str(file_path))
+
+        execution_time = time.time() - start_time
+        logger.info(f"Request completed in {execution_time:.2f} seconds")
+
+        return {
+            "status": "completed",
+            "message": "PDF processed successfully."
+        }
+
+    except Exception as e:
+        logger.exception(f"PDF processing failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
