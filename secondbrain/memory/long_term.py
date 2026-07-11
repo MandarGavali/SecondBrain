@@ -27,8 +27,8 @@ class LongTermMemory:
                 "provider": "gemini",
                 "config": {
                     "model": "models/gemini-embedding-2",
-                     "api_key": os.getenv("GOOGLE_API_KEY"),
-
+                    "api_key": os.getenv("GOOGLE_API_KEY"),
+                },
             },
 
             "vector_store": {
