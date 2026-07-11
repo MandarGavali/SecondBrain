@@ -3,6 +3,7 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
 import os
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
@@ -14,6 +15,7 @@ def create_vector_store(chunks: List[Document], embedding_model: GoogleGenerativ
         documents=chunks,
         embedding=embedding_model,
         url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
         collection_name=COLLECTION_NAME
     )
     # logger.info("Indexing complete [OK]")
@@ -23,6 +25,7 @@ def get_existing_vector_store(embedding_model: GoogleGenerativeAIEmbeddings) -> 
     """Loads an existing Qdrant vector store collection."""
     vector_store = QdrantVectorStore.from_existing_collection(
         url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
         collection_name=COLLECTION_NAME,
         embedding=embedding_model
     )
