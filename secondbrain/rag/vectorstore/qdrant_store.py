@@ -1,3 +1,4 @@
+import os
 from secondbrain.utils.logger import logger
 from typing import List
 from langchain_core.documents import Document
@@ -5,7 +6,7 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
-import os
+
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = "Learning_RAG"
 
