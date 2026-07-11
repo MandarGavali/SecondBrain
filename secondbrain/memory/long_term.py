@@ -34,6 +34,7 @@ class LongTermMemory:
                 "provider": "qdrant",
                 "config": {
                     "url": os.getenv("QDRANT_URL", "http://localhost:6333"),
+                    "api_key": os.getenv("QDRANT_API_KEY"),
                     "collection_name": "User_Memory",
                     "embedding_model_dims": 768,
                 },
