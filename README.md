@@ -279,8 +279,8 @@ SecondBrain/
 # 🔬 Research Extensions
 
 SecondBrain has four research extensions on top of the base agentic RAG system. They are
-**additive and flag-gated**. The default `GRAPH_MODE=agent` runs the original two-node agent
-graph unchanged, and `GRAPH_MODE=adaptive` enables the new graph in `secondbrain/graph/adaptive.py`.
+**additive and flag-gated**. `GRAPH_MODE=agent` runs the original two-node agent
+graph unchanged; `GRAPH_MODE=adaptive` (the default) runs the new graph in `secondbrain/graph/adaptive.py`.
 Every component falls back to the old behaviour on error. Implementation details, deviations
 from the design spec and known issues are in [`docs/IMPLEMENTATION_NOTES.md`](docs/IMPLEMENTATION_NOTES.md).
 
@@ -355,7 +355,7 @@ so the evaluation harness can switch configurations at runtime.
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `GRAPH_MODE` | `agent` | `agent` = legacy graph, `adaptive` = new graph |
+| `GRAPH_MODE` | `adaptive` | `adaptive` = new graph, `agent` = legacy graph |
 | `FORCE_ROUTE` | *(empty)* | `no_search` \| `simple` \| `complex`: forces the route (used for baselines) |
 | `ENABLE_ROUTER` | `1` | `0` → every query is `complex` |
 | `ROUTER_MODE` | `hybrid` | `heuristic` \| `llm` \| `hybrid` |

@@ -8,7 +8,7 @@ import os
 # attribute -> (ENV_NAME, type, default)
 _DEFS = {
     # orchestration
-    "graph_mode": ("GRAPH_MODE", str, "agent"),
+    "graph_mode": ("GRAPH_MODE", str, "adaptive"),
     "force_route": ("FORCE_ROUTE", str, ""),
     "enable_router": ("ENABLE_ROUTER", bool, True),
     "router_mode": ("ROUTER_MODE", str, "hybrid"),
