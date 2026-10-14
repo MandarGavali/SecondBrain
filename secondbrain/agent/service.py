@@ -13,12 +13,13 @@ def upload_document(path: str) -> dict:
     Upload a document into the SecondBrain knowledge base.
     """
 
-    chunks = ingest_document(path)
+    result = ingest_document(path)
 
     return {
         "status": "success",
         "filename": Path(path).name,
-        "chunks_indexed": chunks,
+        "chunks_indexed": result["chunks_indexed"],
+        "quality": result.get("quality"),
     }
 
 

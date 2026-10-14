@@ -16,12 +16,12 @@ def process_pdf(pdf_path: str):
 
     try:
         # Call the RAG ingestion pipeline
-        chunks_indexed = ingest_document(pdf_path)
+        result = ingest_document(pdf_path)
 
-        logger.info(f"Successfully indexed {chunks_indexed} chunks.")
+        logger.info(f"Successfully indexed {result['chunks_indexed']} chunks.")
         logger.info("=" * 60)
 
-        return chunks_indexed
+        return result
 
     except Exception as e:
         logger.info("=" * 60)
@@ -32,3 +32,11 @@ def process_pdf(pdf_path: str):
 
         # Re-raise so RQ marks the job as failed
         raise
+
+
+def reflect_session_job(user_id: str, transcript: list):
+    """RQ job: AAM reflection after a conversation ends."""
+    from secondbrain.memory.reflection import reflect_session
+
+    logger.info(f"AAM job started for user={user_id}")
+    return reflect_session(user_id, transcript)

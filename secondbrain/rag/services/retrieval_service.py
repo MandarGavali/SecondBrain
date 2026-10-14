@@ -47,3 +47,18 @@ def retrieve_relevant_documents(query: str, k: int = 5) -> List[Document]:
     except Exception as e:
         logger.exception("Error occurred during document retrieval.")
         raise RetrieverError(f"Document retrieval failed: {e}") from e
+
+
+from typing import Tuple
+from secondbrain.rag.retriever.retriever import retrieve_documents_with_scores as _raw_with_scores
+
+
+def retrieve_with_scores(query: str, k: int = 5) -> List[Tuple[Document, float]]:
+    """Like retrieve_relevant_documents, but returns (Document, similarity_score) pairs."""
+    logger.info("Retriever (with scores) started")
+    try:
+        vector_store = _get_vector_store()
+        return _raw_with_scores(query=query, vector_store=vector_store, k=k)
+    except Exception as e:
+        logger.exception("Error occurred during scored document retrieval.")
+        raise RetrieverError(f"Document retrieval failed: {e}") from e

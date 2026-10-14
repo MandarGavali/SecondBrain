@@ -65,8 +65,8 @@ def generate_node(state: GraphState) -> Dict[str, Any]:
         raise ValidationError("The 'user_query' is required to execute generate_node.")
     
     if documents is None:
-        logger.error("Missing 'retrieved_docs' in state.")
-        raise ValidationError("The 'retrieved_docs' are required to execute generate_node.")
+        logger.error("Missing 'filtered_docs' in state.")
+        raise ValidationError("The 'filtered_docs' are required to execute generate_node.")
 
     # 2. Log Start
     logger.info("Executing generate_node.")
