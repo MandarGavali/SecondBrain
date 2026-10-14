@@ -51,14 +51,17 @@ async def upload_file(file: UploadFile):
     logger.info(f"📤 Processing PDF synchronously: {unique_filename}")
 
     try:
-        process_pdf(str(file_path))
+        result = process_pdf(str(file_path))
 
         execution_time = time.time() - start_time
         logger.info(f"Request completed in {execution_time:.2f} seconds")
 
         return {
             "status": "completed",
-            "message": "PDF processed successfully."
+            "message": "PDF processed successfully.",
+            "document": unique_filename,
+            "chunks_indexed": result.get("chunks_indexed"),
+            "quality": result.get("quality"),
         }
 
     except Exception as e:

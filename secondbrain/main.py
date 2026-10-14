@@ -13,6 +13,7 @@ logger = get_logger("main")
 from secondbrain.api.chat import router as chat_router
 from secondbrain.api.upload import router as upload_router
 from secondbrain.api.jobs import router as jobs_router
+from secondbrain.api.documents import router as documents_router
 
 app = FastAPI(
     title="SecondBrain AI"
@@ -21,6 +22,7 @@ app = FastAPI(
 app.include_router(chat_router)
 app.include_router(upload_router)
 app.include_router(jobs_router)
+app.include_router(documents_router)
 
 @app.exception_handler(SecondBrainError)
 async def secondbrain_exception_handler(request: Request, exc: SecondBrainError):
@@ -56,4 +58,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def healthz():
     return {"status": "ok"}
 
-    
+
+# Web UI. Mounted last so every API route above takes precedence over the static files.
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")

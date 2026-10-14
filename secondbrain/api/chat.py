@@ -26,3 +26,9 @@ def chat(request: ChatRequest, background_tasks: BackgroundTasks):
 
     logger.info(f"Chat done. route={result.get('route')} latency_ms={result['metrics'].get('latency_ms')}")
     return ChatResponse(**result, reflection=reflection)
+
+
+@router.post("/sessions/{thread_id}/end")
+def end_chat_session(thread_id: int, background_tasks: BackgroundTasks, user_id: str | None = None):
+    """End a conversation without sending another message -> AAM memory reflection."""
+    return end_session(thread_id, user_id, background_tasks)
