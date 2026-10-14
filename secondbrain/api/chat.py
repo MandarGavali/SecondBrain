@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from secondbrain.agent.service import end_session, run_turn
 from secondbrain.core.logger import get_logger
@@ -12,7 +12,13 @@ router = APIRouter()
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest, background_tasks: BackgroundTasks):
     logger.info(f"Chat request. thread={request.thread_id} query={request.query!r}")
-    result = run_turn(request.query, request.thread_id, request.user_id)
+    try:
+        result = run_turn(request.query, request.thread_id, request.user_id)
+    except Exception as e:
+        if "RESOURCE_EXHAUSTED" in str(e):
+            logger.warning("Gemini quota exhausted")
+            raise HTTPException(status_code=503, detail="Gemini API quota exceeded. Please try again later.")
+        raise
 
     reflection = None
     if request.session_end:

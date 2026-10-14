@@ -1,0 +1,5 @@
+{"id": "c01", "old": "I work from home 2 days a week.", "new": "I now work from home 3 days a week.", "probe": "How many days do I work from home?", "old_value": "2 days", "new_value": "3 days"}
+{"id": "c02", "old": "My favourite programming language is Java.", "new": "I've switched, my favourite language is now Python.", "probe": "What is my favourite programming language?", "old_value": "java", "new_value": "python"}
+{"id": "c03", "old": "I live in Mumbai.", "new": "I moved to Pune last month.", "probe": "Where do I live?", "old_value": "mumbai", "new_value": "pune"}
+{"id": "c04", "old": "My project deadline is 15 November.", "new": "The project deadline was moved to 30 November.", "probe": "When is my project deadline?", "old_value": "15 november", "new_value": "30 november"}
+{"id": "c05", "old": "I use VS Code as my editor.", "new": "I now use PyCharm instead of VS Code.", "probe": "Which code editor do I use?", "old_value": "vs code", "new_value": "pycharm"}

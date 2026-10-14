@@ -12,7 +12,7 @@ def register_session_tools(mcp: FastMCP) -> None:
         name="end_session",
         description="Signal that a conversation is finished so long-term memory is updated in the background.",
     )
-    def end_session_tool(thread_id: str, user_id: str = "default") -> dict:
+    def end_session_tool(thread_id: str, user_id: str | None = None) -> dict:  # None -> thread id, like ask_secondbrain
         try:
             return end_session(thread_id=thread_id, user_id=user_id)
         except Exception as e:

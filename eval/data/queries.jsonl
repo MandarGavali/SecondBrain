@@ -1,0 +1,8 @@
+{"id": "q001", "query": "hello", "label": "no_search", "answerable": true, "gold": ""}
+{"id": "q002", "query": "thanks!", "label": "no_search", "answerable": true, "gold": ""}
+{"id": "q003", "query": "What is the project codename?", "label": "simple", "answerable": true, "gold": "Falcon"}
+{"id": "q004", "query": "When was the project started?", "label": "simple", "answerable": true, "gold": "2026"}
+{"id": "q005", "query": "Summarize everything my documents say about the project", "label": "complex", "answerable": true, "gold": "Codename Falcon, started in 2026"}
+{"id": "q006", "query": "Which documents have I uploaded?", "label": "complex", "answerable": true, "gold": ""}
+{"id": "q007", "query": "What is the CEO's phone number?", "label": "simple", "answerable": false, "gold": ""}
+{"id": "q008", "query": "What was the project budget in 2025?", "label": "simple", "answerable": false, "gold": ""}
