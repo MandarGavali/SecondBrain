@@ -2,6 +2,7 @@ import os
 from typing import List
 
 from secondbrain.rag.services.retrieval_service import _get_vector_store
+from secondbrain.rag.vectorstore.qdrant_store import collection_exists
 from secondbrain.core.exceptions import RetrievalError
 from secondbrain.core.logger import get_logger
 
@@ -25,6 +26,8 @@ def list_documents() -> List[str]:
     logger.info("list_documents tool invoked")
     
     try:
+        if not collection_exists():  # nothing uploaded yet: an empty list, not an error
+            return []
         vector_store = _get_vector_store()
         
         sources = set()

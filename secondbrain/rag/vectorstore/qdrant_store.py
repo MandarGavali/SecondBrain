@@ -33,3 +33,10 @@ def get_existing_vector_store(embedding_model: GoogleGenerativeAIEmbeddings) -> 
         embedding=embedding_model
     )
     return vector_store
+
+
+def collection_exists() -> bool:
+    """False before the first upload: the collection is created by the first create_vector_store."""
+    from qdrant_client import QdrantClient
+
+    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY).collection_exists(COLLECTION_NAME)
