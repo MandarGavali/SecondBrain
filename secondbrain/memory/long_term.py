@@ -50,13 +50,14 @@ class LongTermMemory:
         user_id: str,
         messages: List[Dict[str, str]],
         metadata: Dict[str, Any] | None = None,
+        infer: bool = True,
     ):
-
-        return self.memory.add(
-            messages=messages,
-            user_id=user_id,
-            metadata=metadata or {},
-        )
+        meta = {"status": "active", **(metadata or {})}
+        try:
+            return self.memory.add(messages=messages, user_id=user_id, metadata=meta, infer=infer)
+        except TypeError:
+            # Mem0 build without the `infer` argument
+            return self.memory.add(messages=messages, user_id=user_id, metadata=meta)
 
     def search_memory(
         self,

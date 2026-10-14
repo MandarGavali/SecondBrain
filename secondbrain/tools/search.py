@@ -38,3 +38,22 @@ def search_documents(query: str, k: int = 5) -> List[Document]:
     except Exception as e:
         logger.exception(f"Unexpected error in search_documents: {e}")
         raise RetrievalError(f"Unexpected retrieval failure in search_documents: {e}") from e
+
+
+from secondbrain.rag.evidence import doc_to_evidence
+from secondbrain.rag.services.retrieval_service import retrieve_with_scores
+
+
+def search_documents_evidence(query: str, k: int = 5) -> tuple[str, list[dict]]:
+    """Agent-facing search. Returns (text for the LLM, evidence list kept as the tool artifact)."""
+    if not query or not query.strip():
+        raise ValueError("Query cannot be empty or blank.")
+    pairs = retrieve_with_scores(query=query, k=k)
+    evidence = [doc_to_evidence(doc, score) for doc, score in pairs]
+    if not evidence:
+        return "No relevant passages found.", []
+    blocks = [
+        f"[{i}] {e['document']} - page {e['page']} (similarity {e['score']:.2f})\n{e['text']}"
+        for i, e in enumerate(evidence, start=1)
+    ]
+    return "\n\n".join(blocks), evidence

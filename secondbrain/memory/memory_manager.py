@@ -108,3 +108,13 @@ class MemoryManager:
         except Exception as e:
             logger.exception("Failed to extract and save memory")
             raise MemoryError(f"Memory extraction/save failed: {e}") from e
+
+_instance = None
+
+
+def get_memory_manager() -> "MemoryManager":
+    """Lazy singleton (creating MemoryManager initialises Mem0 + Qdrant + Mongo)."""
+    global _instance
+    if _instance is None:
+        _instance = MemoryManager()
+    return _instance

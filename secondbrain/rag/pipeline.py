@@ -29,6 +29,16 @@ def ingest_document(pdf_path: str):
         
         # 3. Chunk the documents
         chunks = chunk_documents(docs)
+
+        from secondbrain.config import settings
+        from secondbrain.rag.processors.quality_filter import filter_chunks
+
+        quality = None
+        if settings.quality_enabled:
+            chunks, quality = filter_chunks(chunks)
+            logger.info(f"Quality filter: {quality}")
+        if not chunks:
+            raise ValueError("No usable text found in the document (empty or scanned PDF?).")
         
         # 4. Get embeddings
         embedding_model = get_embedding_model()
@@ -40,6 +50,7 @@ def ingest_document(pdf_path: str):
         return {
             "chunks_indexed": len(chunks),
             "status": "success",
+            "quality": quality,
             "message": f"Successfully processed and loaded {len(chunks)} chunks into the vector database."
         }
     except Exception as e:

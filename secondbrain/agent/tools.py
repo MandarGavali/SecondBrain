@@ -1,13 +1,13 @@
 from langchain_core.tools import StructuredTool
 
-from secondbrain.tools.search import search_documents
+from secondbrain.tools.search import search_documents_evidence
 from secondbrain.tools.documents import list_documents
 from secondbrain.tools.summarize import summarize_documents
 from secondbrain.tools.questions import generate_questions
 
 
 search_tool = StructuredTool.from_function(
-    func=search_documents,
+    func=search_documents_evidence,
     name="search_documents",
     description=(
         "Search the indexed knowledge base and return the most "
@@ -15,6 +15,7 @@ search_tool = StructuredTool.from_function(
         "Use this whenever the user asks about information contained "
         "inside their uploaded documents."
     ),
+    response_format="content_and_artifact",
 )
 
 list_documents_tool = StructuredTool.from_function(

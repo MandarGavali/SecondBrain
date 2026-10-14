@@ -5,17 +5,9 @@ from secondbrain.agent.tools import get_tools
 from secondbrain.agent.prompts import agent_prompt
 
 
-def create_agent() -> Runnable:
-    """
-    Creates the Gemini agent with all registered tools.
-    """
-
+def create_agent(tools=None) -> Runnable:
+    """Creates the Gemini agent. `tools` = subset to bind (LO-MCP); default = all tools."""
     llm = get_llm()
-
-    tools = get_tools()
-
+    tools = tools if tools is not None else get_tools()
     llm_with_tools = llm.bind_tools(tools)
-
-    agent = agent_prompt | llm_with_tools
-
-    return agent
+    return agent_prompt | llm_with_tools
