@@ -49,6 +49,13 @@ class MemoryStatusStore:
             upsert=True,
         )
 
+    def remove(self, memory_id: str) -> None:
+        """Drop the audit row of a memory that was deleted outright (never raises)."""
+        try:
+            self._collection().delete_one({"memory_id": memory_id})
+        except Exception as e:
+            logger.warning(f"Could not remove status row for {memory_id}: {e}")
+
     def history(self, user_id: str) -> list[dict]:
         return list(self._collection().find({"user_id": user_id}, {"_id": 0}))
 

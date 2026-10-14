@@ -27,5 +27,6 @@ def get_logger(name: str) -> logging.Logger:
         file_handler = logging.FileHandler(log_dir / "app.log")
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
+        logger.propagate = False  # own handlers only; avoid duplicate lines once a library configures root
         
     return logger

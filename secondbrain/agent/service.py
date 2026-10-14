@@ -122,12 +122,17 @@ def remember(text: str, user_id: str = "default") -> dict:
     return {"status": "success", "message": "Memory stored successfully.", "result": result}
 
 
-def list_memories(user_id: str = "default") -> list:
-    """Return all stored memories for a user."""
-    return get_memory_manager().long_term.get_all_memories(user_id=user_id)
+def list_memories(user_id: str = "default") -> dict:
+    """Return the user's active memories (AAM-deprecated ones are hidden, as on recall)."""
+    from secondbrain.memory.reflection import filter_active
+
+    return filter_active(get_memory_manager().long_term.get_all_memories(user_id=user_id), user_id)
 
 
 def forget(memory_id: str) -> dict:
-    """Delete a memory from long-term storage."""
+    """Delete a memory from long-term storage (and its AAM status row, if any)."""
+    from secondbrain.memory.status_store import get_status_store
+
     result = get_memory_manager().long_term.delete_memory(memory_id=memory_id)
+    get_status_store().remove(memory_id)
     return {"status": "success", "deleted": True, "result": result}
