@@ -8,6 +8,9 @@
 #     search_results = retriever.invoke(query)
 #     return search_results
 
+from typing import List
+from langchain_core.documents import Document
+from langchain_qdrant import QdrantVectorStore
 from secondbrain.core.logger import get_logger
 
 logger = get_logger("rag.retriever")
