@@ -1,4 +1,8 @@
+import time
+
+from secondbrain.config import settings
 from secondbrain.utils.logger import logger
+from secondbrain.utils.text import message_text
 from secondbrain.graph.workflow import create_graph
 
 _graph = None
@@ -38,62 +42,82 @@ def get_graph():
     return _graph
 
 
-def answer_query(
-    query: str,
-    thread_id: str | None = None,
-) -> str:
+_adaptive_graph = None
 
-    import time
-    from secondbrain.utils.logger import logger
-    logger.info(f"[TIMING] answer_query start: {time.perf_counter()}")
 
-    graph = get_graph()
-    logger.info(f"[TIMING] answer_query got graph: {time.perf_counter()}")
+def get_adaptive_graph():
+    global _adaptive_graph
+    if _adaptive_graph is None:
+        from secondbrain.graph.adaptive import create_adaptive_graph
+        _adaptive_graph = create_adaptive_graph()
+    return _adaptive_graph
 
-    config = {
-        "configurable": {
-            "thread_id": thread_id or "default"
+
+def run_turn(query: str, thread_id=None, user_id: str | None = None) -> dict:
+    """Single entry point for one chat turn. Returns a dict matching ChatResponse (minus `reflection`)."""
+    started = time.perf_counter()
+    tid = str(thread_id) if thread_id is not None else "default"
+    uid = str(user_id) if user_id else tid          # same default as the old API: user_id == thread_id
+    config = {"configurable": {"thread_id": tid}, "recursion_limit": 30}
+
+    if settings.graph_mode == "adaptive":
+        from secondbrain.graph.adaptive import new_turn_input
+        from secondbrain.rag.evidence import build_sources
+
+        result = get_adaptive_graph().invoke(new_turn_input(query, uid), config=config)
+        answer = result.get("answer") or message_text(result["messages"][-1].content)
+        metrics = dict(result.get("metrics") or {})
+        metrics["latency_ms"] = int((time.perf_counter() - started) * 1000)
+        metrics["route_method"] = result.get("route_method")
+        metrics["retries"] = result.get("retries", 0)
+        label = result.get("confidence_label")
+        if label is None and settings.enable_verify and result.get("route") == "no_search":
+            label = "N/A"  # verify never runs on the chat route: no document evidence was used
+        return {
+            "answer": answer,
+            "confidence": label or "Unverified",
+            "confidence_score": result.get("confidence_score"),
+            "route": result.get("route"),
+            "grounded": result.get("is_grounded"),
+            "abstained": bool(result.get("abstained")),
+            "needs_review": bool(result.get("needs_review")),
+            "sources": build_sources(result.get("evidence") or []),
+            "metrics": metrics,
         }
+
+    # legacy graph (GRAPH_MODE=agent)
+    result = get_graph().invoke({"messages": [("user", query)], "user_id": uid}, config=config)
+    return {
+        "answer": message_text(result["messages"][-1].content),
+        "confidence": "Unverified",
+        "confidence_score": None, "route": None, "grounded": None,
+        "abstained": False, "needs_review": False, "sources": [],
+        "metrics": {"latency_ms": int((time.perf_counter() - started) * 1000)},
     }
 
-    logger.info(f"[TIMING] answer_query invoking graph: {time.perf_counter()}")
-    # result = graph.invoke(
-    #     {
-    #         "messages": [("user", query)]
-    #     },
-    #     config=config
-    # )
+
+def answer_query(query: str, thread_id: str | None = None, user_id: str | None = None) -> str:
+    """Kept for the MCP `ask_secondbrain` tool (returns text only)."""
     try:
-        result = graph.invoke(
-              {
-                "messages": [("user", query)]
-            },
-            config=config
-        )
+        return run_turn(query, thread_id or "default", user_id)["answer"]
     except Exception as e:
         if "RESOURCE_EXHAUSTED" in str(e):
-            return (
-                "Gemini API quota exceeded. "
-                "Please try again later or use a different API key."
-            )
+            return "Gemini API quota exceeded. Please try again later or use a different API key."
         raise
-    
-    logger.info(f"[TIMING] answer_query graph invoked: {time.perf_counter()}")
 
-    logger.info(type(result["messages"][-1].content))
-    logger.info(result["messages"][-1].content)
 
-    # If content is a list, convert it to plain text
-    content = result["messages"][-1].content
+def end_session(thread_id, user_id: str | None = None, background_tasks=None) -> dict:
+    """Signal that a conversation is over -> AAM reflection runs in the background."""
+    if not settings.enable_aam:
+        return {"status": "skipped", "reason": "ENABLE_AAM=0"}
+    from secondbrain.memory.reflection import build_transcript, schedule_reflection
 
-    if isinstance(content, list):
-        return "".join(
-            part.get("text", "")
-            for part in content
-            if isinstance(part, dict)
-        )
-
-    return str(content)
+    tid = str(thread_id)
+    uid = str(user_id) if user_id else tid
+    graph = get_adaptive_graph() if settings.graph_mode == "adaptive" else get_graph()
+    snapshot = graph.get_state({"configurable": {"thread_id": tid}})
+    messages = (snapshot.values or {}).get("messages", []) if snapshot else []
+    return schedule_reflection(uid, build_transcript(messages), background_tasks)
 
 # ============================
 # Long-Term Memory Services

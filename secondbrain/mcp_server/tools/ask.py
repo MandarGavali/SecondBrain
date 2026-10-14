@@ -22,6 +22,7 @@ def register_ask_tool(mcp: FastMCP) -> None:
     def ask_secondbrain(
         query: str,
         thread_id: str | None = None,
+        user_id: str | None = None,
     ) -> str:
         import uuid
         logger.info("Tool execution started")
@@ -30,6 +31,7 @@ def register_ask_tool(mcp: FastMCP) -> None:
             return answer_query(
                 query=query,
                 thread_id=actual_thread_id,
+                user_id=user_id,
             )
         except Exception as e:
             logger.exception(f"ask_secondbrain tool failed: {e}")
