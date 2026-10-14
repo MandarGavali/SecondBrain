@@ -185,7 +185,11 @@ def retrieve_node(state: AdaptiveState) -> dict:
     retrying = (state.get("retries") or 0) > 0
     query = state.get("rewritten_query") or state["user_query"]
     k = settings.retry_k if retrying else settings.simple_k
-    pairs = retrieve_with_scores(query=query, k=k)
+    try:
+        pairs = retrieve_with_scores(query=query, k=k)
+    except Exception as e:  # no evidence -> generate answers "not found" and verify reports N/A
+        logger.warning(f"retrieval failed, continuing without evidence: {e}")
+        pairs = []
     evidence = [doc_to_evidence(doc, score) for doc, score in pairs]
     return {"evidence": evidence, "metrics": _metric(state, "t_retrieve_ms", t0)}
 

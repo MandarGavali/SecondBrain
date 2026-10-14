@@ -12,6 +12,8 @@ from secondbrain.core.exceptions import GeminiError
 
 logger = get_logger("rag.llm")
 
+MAX_RETRY_SLEEP_S = 65.0  # per-minute limits ask for <= 60s; anything longer is a daily quota
+
 def execute_with_retry(api_func, *args, max_attempts=5, **kwargs):
     """
     Executes a Gemini API function with automatic retry on 429/RESOURCE_EXHAUSTED errors.
@@ -53,7 +55,13 @@ def execute_with_retry(api_func, *args, max_attempts=5, **kwargs):
             if sleep_time is None:
                 sleep_time = backoff
                 backoff *= 2.0
-                
+
+            # A daily quota (retryDelay of hours) cannot be waited out inside a request:
+            # fail fast so the API can answer 503 instead of holding a worker thread for hours.
+            if sleep_time > MAX_RETRY_SLEEP_S or "PerDay" in str(e):
+                logger.error(f"Gemini quota exhausted (retry in {sleep_time:.0f}s); not retrying.")
+                raise GeminiError(f"Gemini API request failed: {e}") from e
+
             logger.warning(f"\n[RATE LIMIT] Gemini 429 rate limit hit. Sleeping for {sleep_time:.2f} seconds before retry {attempt}/{max_attempts}...")
             time.sleep(sleep_time)
         except Exception as e:

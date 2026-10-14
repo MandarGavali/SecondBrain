@@ -61,10 +61,26 @@ clients can be constructed. No network call is made.
   `gemini-embedding-2` produces. **The thresholds MUST be calibrated (Phase 4,
   `python -m eval.calibrate eval/data/queries.jsonl`) before production is switched to
   `GRAPH_MODE=adaptive`.**
-- **Gemini free-tier rate limits.** 429 / `RESOURCE_EXHAUSTED` responses add about 60 s of
-  latency per affected call, because of the existing retry sleeps (`execute_with_retry` in
+- **Gemini free-tier rate limits.** Per-minute 429s add up to about 60 s of latency per
+  affected call, because of the existing retry sleeps (`execute_with_retry` in
   `generate_answer` and `max_retries=10` on the LangChain client). Latency numbers from
   free-tier runs are therefore not representative. Run the evaluation configs sequentially.
+  The free tier also caps `gemini-2.5-flash` at **20 requests/day**, which is far too few for
+  a full ablation run.
+- **Fixed during verification: daily quota hang.** `execute_with_retry` used to sleep for the
+  server's whole `retryDelay`, which is about 14 h for a daily quota. That held the request and a
+  uvicorn worker thread hostage. It now fails fast when the delay exceeds 65 s or the quota is
+  `PerDay`, and `/chat` maps `RESOURCE_EXHAUSTED` to HTTP 503 (checked live: 503 in about 2 s).
+- **Fixed during verification: retrieval failure.** `retrieve_node` now falls back to "no
+  evidence" (answer `NO_INFO_MESSAGE`, confidence `N/A`) instead of raising HTTP 500 when
+  embeddings or Qdrant are unreachable (spec rule 5).
+- **Not yet verified live (quota exhausted on 2026-10-14):** the AAM conflict flow with the real
+  Gemini judge (the plumbing passed with a stubbed LLM against real Mem0, Qdrant and Mongo: the
+  old fact was deprecated and recall returned only the new one), the abstain path, and the
+  background `session_end` reflection. Rerun spec Section 7 items 3, 6 and 7 once the quota resets.
+- **`discover_tools` covers the agent's tools, not the MCP tools.** The LO-MCP index is built from
+  `agent/tools.py:get_tools()`. `discover_tools` therefore returns agent tool schemas (for example
+  `list_documents`, which is not an MCP tool), in LangChain/OpenAI function format.
 - **Import-time MemoryManager (pre-existing).** `graph/agent_node.py` (module level) and
   `agent/service.py` (`_memory_manager = MemoryManager()`) instantiate `MemoryManager` at
   import time. Importing `secondbrain.agent.service`, `api/chat.py` or the MCP server

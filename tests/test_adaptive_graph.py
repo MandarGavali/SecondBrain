@@ -70,6 +70,17 @@ def test_ungrounded_answer_retries_once_then_abstains(graph, monkeypatch):
     assert r["answer"] == adaptive.ABSTAIN_MESSAGE
 
 
+def test_retrieval_failure_does_not_raise(graph, monkeypatch):
+    def boom(query, k):
+        raise RuntimeError("Network is unreachable")
+
+    monkeypatch.setattr(adaptive, "retrieve_with_scores", boom)
+    r = run(graph, "What is the annual leave policy?")
+    assert r["route"] == "simple"
+    assert r["answer"] == adaptive.NO_INFO_MESSAGE
+    assert r["confidence_label"] == "N/A"
+
+
 def test_complex_route_uses_only_selected_tools(graph, monkeypatch):
     monkeypatch.setenv("ENABLE_LOMCP", "0")
     seen = {}
