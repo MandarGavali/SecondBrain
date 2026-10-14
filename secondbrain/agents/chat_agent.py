@@ -1,5 +1,7 @@
-from secondbrain.utils.logger import logger
-from secondbrain.utils.exceptions import GenerationError
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("agents.chat")
+from secondbrain.core.exceptions import GenerationError
 from secondbrain.rag.services.chat_service import generate_standard_chat
 
 def run_chat_agent(query: str, history: list = None) -> str:

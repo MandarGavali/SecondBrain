@@ -21,3 +21,10 @@ class MCPError(SecondBrainError):
 class ValidationError(SecondBrainError):
     """Raised when input validation fails."""
     pass
+
+class GenerationError(SecondBrainError):
+    """Raised when answer/summary generation fails."""
+    pass
+
+# Old name used by the tools layer; one class so `except` clauses match what the service raises.
+RetrievalError = RetrieverError

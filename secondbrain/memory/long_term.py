@@ -87,19 +87,3 @@ class LongTermMemory:
         return self.memory.get_all(
             filters={"user_id": user_id}
         )
-
-    def get_memory_context(
-            self,
-            user_id: str,
-            query: str,
-            limit: int = 5,
-        ) -> str:
-
-        memories = self.search_memory(
-            user_id=user_id,
-            query=query,
-            limit=limit,
-        )
-
-        context = "\n".join([memory["content"] for memory in memories])
-        return context

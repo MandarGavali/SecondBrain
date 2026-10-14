@@ -1,16 +1,13 @@
-import os
-from pathlib import Path
+from functools import lru_cache
+
 from langchain_core.documents import Document
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+from secondbrain.rag.llm.gemini_llm import get_llm
 
 
-
-# Initialize LangChain Gemini model (similar to other grading/rewriting services)
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
-    max_retries=10
-)
+@lru_cache(maxsize=1)
+def _llm():
+    return get_llm()
 
 def check_hallucination(answer: str, documents: list[Document]) -> tuple[bool, str]:
     """
@@ -32,7 +29,7 @@ Answer:
 Respond ONLY with YES or NO on the first line, followed by a brief reason on the second line.
 """
     
-    response = llm.invoke(prompt)
+    response = _llm().invoke(prompt)
     content_lines = response.content.strip().split("\n")
     
     # FIX: Use startswith instead of exact equality.

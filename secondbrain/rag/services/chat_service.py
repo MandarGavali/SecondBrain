@@ -1,5 +1,7 @@
-from secondbrain.utils.logger import logger
-from secondbrain.utils.exceptions import GenerationError
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("rag.services.chat")
+from secondbrain.core.exceptions import GenerationError
 from secondbrain.rag.llm.gemini_llm import generate_chat_response
 
 def generate_standard_chat(query: str, history: list = None) -> str:

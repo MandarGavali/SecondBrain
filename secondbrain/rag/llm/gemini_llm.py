@@ -1,4 +1,3 @@
-from secondbrain.utils.logger import logger
 import os
 import time
 import re

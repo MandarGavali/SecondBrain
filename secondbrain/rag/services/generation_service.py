@@ -1,8 +1,10 @@
 from typing import List
 from langchain_core.documents import Document
 
-from secondbrain.utils.logger import logger
-from secondbrain.utils.exceptions import GenerationError
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("rag.services.generation")
+from secondbrain.core.exceptions import GenerationError
 from secondbrain.rag.llm.gemini_llm import generate_answer
 
 def generate_grounded_answer(query: str, documents: List[Document]) -> str:

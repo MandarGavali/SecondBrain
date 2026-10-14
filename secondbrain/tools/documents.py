@@ -2,8 +2,10 @@ import os
 from typing import List
 
 from secondbrain.rag.services.retrieval_service import _get_vector_store
-from secondbrain.utils.exceptions import RetrievalError
-from secondbrain.utils.logger import logger
+from secondbrain.core.exceptions import RetrievalError
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("tools.documents")
 
 def list_documents() -> List[str]:
     """
@@ -25,21 +27,22 @@ def list_documents() -> List[str]:
     try:
         vector_store = _get_vector_store()
         
-        # Scroll through the collection to extract metadata payload
-        records, _ = vector_store.client.scroll(
-            collection_name=vector_store.collection_name,
-            limit=10000,
-            with_payload=True,
-            with_vectors=False
-        )
-        
         sources = set()
-        for record in records:
-            if record.payload and "metadata" in record.payload:
-                source = record.payload["metadata"].get("source")
+        offset = None
+        while True:  # page through the whole collection, not just the first 10k chunks
+            records, offset = vector_store.client.scroll(
+                collection_name=vector_store.collection_name,
+                limit=10000,
+                offset=offset,
+                with_payload=["metadata.source"],
+                with_vectors=False,
+            )
+            for record in records:
+                source = ((record.payload or {}).get("metadata") or {}).get("source")
                 if source:
-                    # Extract just the filename (basename) from the full path
                     sources.add(os.path.basename(source))
+            if offset is None:
+                break
                     
         sorted_sources = sorted(list(sources))
         logger.info(f"Successfully retrieved {len(sorted_sources)} unique documents.")

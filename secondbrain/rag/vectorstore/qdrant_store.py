@@ -1,5 +1,7 @@
 import os
-from secondbrain.utils.logger import logger
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("rag.vectorstore")
 from typing import List
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore

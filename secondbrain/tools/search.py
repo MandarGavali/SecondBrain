@@ -1,9 +1,11 @@
 from typing import List
 from langchain_core.documents import Document
 
-from secondbrain.rag.services.retrieval_service import retrieve_relevant_documents
-from secondbrain.utils.exceptions import RetrievalError
-from secondbrain.utils.logger import logger
+from secondbrain.rag.evidence import doc_to_evidence
+from secondbrain.rag.services.retrieval_service import retrieve_relevant_documents, retrieve_with_scores
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("tools.search")
 
 def search_documents(query: str, k: int = 5) -> List[Document]:
     """
@@ -29,19 +31,7 @@ def search_documents(query: str, k: int = 5) -> List[Document]:
 
     logger.info(f"search_documents tool invoked with query='{query}' and k={k}")
     
-    try:
-        documents = retrieve_relevant_documents(query=query, k=k)
-        return documents
-    except RetrievalError:
-        # Re-raise expected retrieval errors as-is
-        raise
-    except Exception as e:
-        logger.exception(f"Unexpected error in search_documents: {e}")
-        raise RetrievalError(f"Unexpected retrieval failure in search_documents: {e}") from e
-
-
-from secondbrain.rag.evidence import doc_to_evidence
-from secondbrain.rag.services.retrieval_service import retrieve_with_scores
+    return retrieve_relevant_documents(query=query, k=k)  # raises RetrieverError on failure
 
 
 def search_documents_evidence(query: str, k: int = 5) -> tuple[str, list[dict]]:

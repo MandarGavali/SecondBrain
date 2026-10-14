@@ -1,4 +1,6 @@
-from secondbrain.utils.logger import logger
+from secondbrain.core.logger import get_logger
+
+logger = get_logger("rag.chunker")
 from typing import List
 from pathlib import Path
 from langchain_core.documents import Document

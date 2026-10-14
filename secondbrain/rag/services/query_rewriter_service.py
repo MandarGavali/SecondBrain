@@ -1,6 +1,11 @@
+from functools import lru_cache
+
 from secondbrain.rag.llm.gemini_llm import get_llm
 
-llm = get_llm()
+
+@lru_cache(maxsize=1)
+def _llm():
+    return get_llm()
 
 def rewrite_query(query: str) -> str:
     """
@@ -21,6 +26,6 @@ Original Query:
 Return only the rewritten query.
 """
 
-    response = llm.invoke(prompt)
+    response = _llm().invoke(prompt)
 
     return response.content.strip()
