@@ -72,11 +72,12 @@ def get_llm() -> ChatGoogleGenerativeAI:
     google_api_key = os.getenv("GOOGLE_API_KEY")
     if not google_api_key:
         raise ValueError("GOOGLE_API_KEY not found. Check your .env file.")
-    # Set max_retries=10 to handle rate limits in LangChain calls
+    # The SDK retries 429s with exponential backoff. Keep it short: per-minute limits clear after a
+    # couple of tries, while a daily quota never does (10 retries hung /chat for minutes; see /chat 503).
     return ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         google_api_key=google_api_key,
-        max_retries=10
+        max_retries=2
     )
 
 def generate_answer(query: str, context: str) -> str:
