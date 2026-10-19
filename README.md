@@ -680,6 +680,17 @@ http://localhost:8000/docs
 | **POST** | `/chat` | Chat with indexed documents |
 | **GET** | `/jobs/{job_id}` | Check background processing status |
 | **GET** | `/healthz` | Liveness check (`{"status": "ok"}`) |
+| **GET** | `/documents` | Names of all indexed documents |
+| **POST** | `/sessions/{thread_id}/end` | End a conversation and run AAM reflection |
+| **GET** | `/system` | Every feature flag and threshold, grouped by extension |
+| **POST** | `/route` | Router playground: how a query would be classified |
+| **POST** | `/tools/predict` | LO-MCP playground: per-tool similarity and the bound subset |
+| **GET / POST** | `/memories` | List or add long-term memories (`user_id`) |
+| **DELETE** | `/memories/{memory_id}` | Forget a memory |
+| **GET** | `/memories/history` | AAM audit trail of deprecated memories |
+
+The web UI at `/` (chat with answer inspector, knowledge base, memory, pipeline graph, Tool Lab,
+analytics, system, plus a guided "Present" tour and a Ctrl+K command palette) is built on these endpoints.
 
 ---
 

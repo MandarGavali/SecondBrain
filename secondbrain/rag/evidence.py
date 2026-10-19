@@ -34,5 +34,6 @@ def build_sources(evidence: list[dict]) -> list[dict]:
         key = (e.get("document"), e.get("page"))
         score = e.get("score")
         if key not in best or (score or 0) > (best[key].get("score") or 0):
-            best[key] = {"document": e.get("document"), "page": e.get("page"), "score": score}
+            best[key] = {"document": e.get("document"), "page": e.get("page"), "score": score,
+                         "snippet": (e.get("text") or "")[:400]}
     return sorted(best.values(), key=lambda s: s.get("score") or 0, reverse=True)

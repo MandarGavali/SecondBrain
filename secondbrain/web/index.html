@@ -4,70 +4,344 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SecondBrain</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%234f46e5'/><circle cx='16' cy='16' r='5' fill='white'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c5cff'/><stop offset='1' stop-color='%2300d4ff'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><circle cx='16' cy='16' r='5' fill='white'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <span class="logo" aria-hidden="true"></span>
-        <span>SecondBrain</span>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <div class="shell">
+    <!-- ================= nav rail ================= -->
+    <nav class="rail" id="rail" aria-label="Main">
+      <div class="rail-brand" title="SecondBrain">
+        <span class="logo"><i></i></span>
       </div>
+      <button class="rail-btn active" data-view="chat" data-tour="nav-chat"><svg><use href="#i-chat"/></svg><span>Chat</span></button>
+      <button class="rail-btn" data-view="knowledge" data-tour="nav-knowledge"><svg><use href="#i-docs"/></svg><span>Knowledge</span></button>
+      <button class="rail-btn" data-view="memory" data-tour="nav-memory"><svg><use href="#i-memory"/></svg><span>Memory</span></button>
+      <button class="rail-btn" data-view="pipeline" data-tour="nav-pipeline"><svg><use href="#i-graph"/></svg><span>Pipeline</span></button>
+      <button class="rail-btn" data-view="lab" data-tour="nav-lab"><svg><use href="#i-lab"/></svg><span>Tool Lab</span></button>
+      <button class="rail-btn" data-view="analytics" data-tour="nav-analytics"><svg><use href="#i-chart"/></svg><span>Analytics</span></button>
+      <button class="rail-btn" data-view="system" data-tour="nav-system"><svg><use href="#i-gear"/></svg><span>System</span></button>
+      <div class="rail-spacer"></div>
+      <button class="rail-btn small" id="themeBtn" title="Toggle theme"><svg><use href="#i-theme"/></svg><span>Theme</span></button>
+    </nav>
 
-      <button class="btn btn-primary" id="newChat" type="button">New chat</button>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Documents</h2>
-          <button class="icon-btn" id="refreshDocs" type="button" title="Refresh" aria-label="Refresh documents">↻</button>
-        </div>
-        <label class="drop" id="drop">
-          <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
-          <span class="drop-title">Upload PDF</span>
-          <span class="drop-sub">Click or drop a file here</span>
-        </label>
-        <div class="upload-status" id="uploadStatus" role="status"></div>
-        <ul class="doc-list" id="docList"></ul>
-      </section>
-
-      <section class="panel">
-        <h2>Session</h2>
-        <label class="field">
-          <span>User</span>
-          <input id="userId" type="text" autocomplete="off" spellcheck="false">
-        </label>
-        <div class="session-meta">Thread <code id="threadLabel"></code></div>
-        <button class="btn" id="endSession" type="button" title="Save what you told me to long-term memory">End session &amp; remember</button>
-        <div class="upload-status" id="sessionStatus" role="status"></div>
-      </section>
-    </aside>
-
-    <main class="main">
+    <div class="frame">
+      <!-- ================= top bar ================= -->
       <header class="topbar">
-        <button class="icon-btn menu" id="menuBtn" type="button" aria-label="Toggle sidebar">☰</button>
-        <span class="topbar-title">Ask your documents</span>
-        <span class="health" id="health" title="API status"></span>
+        <button class="icon-btn mobile-only" id="railToggle" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        <div class="crumbs">
+          <span class="brand-name">SecondBrain</span>
+          <span class="crumb-sep">/</span>
+          <span id="viewTitle">Chat</span>
+        </div>
+        <div class="feature-pills" id="featurePills" data-tour="pills"></div>
+        <div class="top-actions">
+          <button class="kbd-btn" id="paletteBtn" title="Command palette"><svg><use href="#i-search"/></svg><span>Search & commands</span><kbd>Ctrl K</kbd></button>
+          <label class="user-chip" title="User id for long-term memory">
+            <svg><use href="#i-user"/></svg>
+            <input id="userId" type="text" autocomplete="off" spellcheck="false" aria-label="User id">
+          </label>
+          <span class="status-dot" id="health" title="API status"></span>
+          <button class="btn btn-glow" id="tourBtn" data-tour="tour"><svg><use href="#i-play"/></svg><span>Present</span></button>
+        </div>
       </header>
 
-      <div class="messages" id="messages" aria-live="polite">
-        <div class="empty" id="empty">
-          <h1>What do you want to know?</h1>
-          <p>Upload a PDF, then ask questions about it. Every answer shows how it was routed, how confident the system is and which pages it came from.</p>
-          <div class="suggestions">
-            <button type="button" class="chip-btn">Which documents have I uploaded?</button>
-            <button type="button" class="chip-btn">Summarize my documents</button>
-            <button type="button" class="chip-btn">Generate interview questions from my notes</button>
-          </div>
-        </div>
-      </div>
+      <!-- ================= views ================= -->
+      <main class="views">
 
-      <form class="composer" id="composer">
-        <textarea id="input" rows="1" placeholder="Ask a question…" aria-label="Message" required></textarea>
-        <button class="btn btn-primary send" id="sendBtn" type="submit" aria-label="Send">Send</button>
-      </form>
-    </main>
+        <!-- ---------- CHAT ---------- -->
+        <section class="view active" id="view-chat">
+          <div class="chat-layout">
+            <aside class="threads" id="threads" data-tour="threads">
+              <button class="btn btn-primary block" id="newChat"><svg><use href="#i-plus"/></svg>New chat</button>
+              <div class="threads-search"><svg><use href="#i-search"/></svg><input id="threadFilter" placeholder="Filter conversations"></div>
+              <ul class="thread-list" id="threadList"></ul>
+              <div class="threads-foot">
+                <button class="btn ghost block" id="endSession" title="Run AAM reflection on this conversation"><svg><use href="#i-memory"/></svg>End session &amp; remember</button>
+                <button class="btn ghost block" id="exportChat"><svg><use href="#i-download"/></svg>Export as Markdown</button>
+              </div>
+            </aside>
+
+            <div class="conversation">
+              <div class="messages" id="messages" aria-live="polite">
+                <div class="hero" id="hero">
+                  <div class="hero-orb" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <h1>Your documents, <em>reasoned over</em>.</h1>
+                  <p>An adaptive RAG agent that routes every question, picks only the tools it needs, checks its own answer against the sources and remembers you across sessions.</p>
+                  <div class="hero-features">
+                    <div class="hf"><b>P1</b><span>Adaptive router</span></div>
+                    <div class="hf"><b>P2</b><span>LO-MCP tool selection</span></div>
+                    <div class="hf"><b>P3</b><span>Adaptive memory</span></div>
+                    <div class="hf"><b>P4</b><span>Verified confidence</span></div>
+                  </div>
+                  <div class="suggestions" id="suggestions" data-tour="suggestions">
+                    <button class="suggest" data-q="Hi! What can you do?"><span class="tag no_search">Direct</span>Hi! What can you do?</button>
+                    <button class="suggest" data-q="Which documents have I uploaded?"><span class="tag complex">Agent</span>Which documents have I uploaded?</button>
+                    <button class="suggest" data-q="What is the main topic of my notes?"><span class="tag simple">Lookup</span>What is the main topic of my notes?</button>
+                    <button class="suggest" data-q="Summarize my documents and compare the key ideas"><span class="tag complex">Agent</span>Summarize and compare the key ideas</button>
+                    <button class="suggest" data-q="Generate 5 interview questions from my notes"><span class="tag complex">Agent</span>Generate 5 interview questions</button>
+                  </div>
+                </div>
+              </div>
+
+              <form class="composer" id="composer" data-tour="composer">
+                <div class="composer-box">
+                  <textarea id="input" rows="1" placeholder="Ask anything about your documents…  (Shift+Enter for a new line)" aria-label="Message"></textarea>
+                  <div class="composer-tools">
+                    <button type="button" class="icon-btn" id="micBtn" title="Dictate (speech to text)"><svg><use href="#i-mic"/></svg></button>
+                    <button type="button" class="icon-btn" id="attachBtn" title="Upload a PDF"><svg><use href="#i-clip"/></svg></button>
+                    <span class="composer-hint" id="composerHint">Enter to send</span>
+                    <button class="btn btn-primary send" id="sendBtn" type="submit"><svg><use href="#i-send"/></svg><span>Send</span></button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <aside class="inspector" id="inspector" data-tour="inspector">
+              <div class="insp-head">
+                <h3>Answer inspector</h3>
+                <button class="icon-btn" id="inspClose" title="Hide inspector"><svg><use href="#i-x"/></svg></button>
+              </div>
+              <div class="insp-body" id="inspBody">
+                <div class="insp-empty">
+                  <svg><use href="#i-scan"/></svg>
+                  <p>Ask a question, then see exactly how the answer was produced: route, tools, timings and how confidence was computed.</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ---------- KNOWLEDGE ---------- -->
+        <section class="view" id="view-knowledge">
+          <div class="page">
+            <div class="page-head">
+              <div><h2>Knowledge base</h2><p>PDFs are parsed, cleaned, chunked, quality-filtered (P4 stage 1), embedded with Gemini and indexed in Qdrant.</p></div>
+              <button class="btn" id="refreshDocs"><svg><use href="#i-refresh"/></svg>Refresh</button>
+            </div>
+
+            <label class="dropzone" id="drop" data-tour="dropzone">
+              <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+              <div class="dz-icon"><svg><use href="#i-upload"/></svg></div>
+              <div class="dz-title">Drop a PDF here or <u>browse</u></div>
+              <div class="dz-sub">Indexed straight into the vector store. Low-quality chunks (TOCs, garbage text) are rejected.</div>
+            </label>
+
+            <div class="ingest" id="ingest" hidden>
+              <div class="ingest-head"><b id="ingestName"></b><span id="ingestState"></span></div>
+              <div class="ingest-steps" id="ingestSteps"></div>
+              <div class="progress"><i id="ingestBar"></i></div>
+              <div class="ingest-result" id="ingestResult"></div>
+            </div>
+
+            <div class="kb-stats" id="kbStats"></div>
+            <div class="toolbar">
+              <div class="search-field"><svg><use href="#i-search"/></svg><input id="docFilter" placeholder="Filter documents"></div>
+            </div>
+            <div class="doc-grid" id="docGrid"></div>
+          </div>
+        </section>
+
+        <!-- ---------- MEMORY ---------- -->
+        <section class="view" id="view-memory">
+          <div class="page">
+            <div class="page-head">
+              <div><h2>Long-term memory</h2><p>Mem0 memories for user <code id="memUser"></code>. AAM reflection extracts facts at session end and deprecates memories they contradict.</p></div>
+              <button class="btn" id="refreshMem"><svg><use href="#i-refresh"/></svg>Refresh</button>
+            </div>
+            <form class="mem-add" id="memForm">
+              <input id="memText" placeholder="Teach SecondBrain something about you, e.g. “I'm preparing for a backend interview”" autocomplete="off">
+              <button class="btn btn-primary" type="submit"><svg><use href="#i-plus"/></svg>Remember</button>
+            </form>
+            <div class="mem-cols">
+              <div>
+                <div class="section-label">Active memories <span class="count" id="memCount">0</span></div>
+                <div class="search-field"><svg><use href="#i-search"/></svg><input id="memFilter" placeholder="Filter memories"></div>
+                <div class="mem-list" id="memList"></div>
+              </div>
+              <div>
+                <div class="section-label">AAM audit trail</div>
+                <div class="timeline" id="memHistory"></div>
+                <div class="aam-explain card">
+                  <h4>How Adaptive Memory works</h4>
+                  <ol class="steps">
+                    <li><b>Session ends</b> — transcript is collected from the checkpointer</li>
+                    <li><b>Extract</b> — Gemini pulls durable facts (max <span data-flag="aam_max_facts"></span>)</li>
+                    <li><b>Match</b> — similar memories found (≥ <span data-flag="aam_sim_threshold"></span>)</li>
+                    <li><b>Judge</b> — SAME / CONTRADICTS / UNRELATED</li>
+                    <li><b>Update</b> — new fact stored, contradicted one deprecated</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- PIPELINE ---------- -->
+        <section class="view" id="view-pipeline">
+          <div class="page wide">
+            <div class="page-head">
+              <div><h2>Adaptive pipeline</h2><p>The LangGraph state machine behind every answer. The highlighted path is the one taken by the selected answer.</p></div>
+              <div class="row">
+                <select id="pathSelect" class="select" aria-label="Answer to trace"></select>
+                <button class="btn btn-primary" id="replayBtn"><svg><use href="#i-play"/></svg>Replay</button>
+              </div>
+            </div>
+            <div class="graph-wrap card" data-tour="graph">
+              <svg id="graphSvg" viewBox="0 0 1120 640" role="img" aria-label="Pipeline graph"></svg>
+              <div class="graph-legend">
+                <span><i class="lg memory"></i>Memory</span><span><i class="lg route"></i>Routing</span>
+                <span><i class="lg rag"></i>Retrieval</span><span><i class="lg agent"></i>Agent</span>
+                <span><i class="lg verify"></i>Verification</span>
+              </div>
+            </div>
+            <div class="node-detail card" id="nodeDetail"></div>
+          </div>
+        </section>
+
+        <!-- ---------- TOOL LAB ---------- -->
+        <section class="view" id="view-lab">
+          <div class="page">
+            <div class="page-head">
+              <div><h2>Tool Lab</h2><p>Probe the router (P1) and the LO-MCP tool predictor (P2) on any query without running a full answer.</p></div>
+            </div>
+            <form class="lab-form card" id="labForm">
+              <textarea id="labInput" rows="2" placeholder="Type a query to analyse…"></textarea>
+              <div class="row wrap">
+                <div class="presets" id="labPresets">
+                  <button type="button" class="chip">thanks!</button>
+                  <button type="button" class="chip">What is a vector database?</button>
+                  <button type="button" class="chip">Which files did I upload?</button>
+                  <button type="button" class="chip">Quiz me on chapter 2</button>
+                  <button type="button" class="chip">Compare the pros and cons of both approaches</button>
+                </div>
+                <button class="btn btn-primary" type="submit"><svg><use href="#i-bolt"/></svg>Analyse</button>
+              </div>
+            </form>
+            <div class="lab-grid">
+              <div class="card" id="labRoute"><h4>P1 · Router decision</h4><div class="muted">Run an analysis to see the route.</div></div>
+              <div class="card" id="labTokens"><h4>P2 · Context budget</h4><div class="muted">Schema tokens sent to the LLM.</div></div>
+              <div class="card span2" id="labTools"><h4>P2 · Tool relevance (cosine similarity)</h4><div class="muted">Each tool's embedding vs. the query embedding.</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- ANALYTICS ---------- -->
+        <section class="view" id="view-analytics">
+          <div class="page wide">
+            <div class="page-head">
+              <div><h2>Analytics</h2><p>Live metrics from every answer in this browser — routing mix, latency, confidence and context savings.</p></div>
+              <button class="btn ghost" id="clearStats"><svg><use href="#i-trash"/></svg>Clear history</button>
+            </div>
+            <div class="kpis" id="kpis" data-tour="kpis"></div>
+            <div class="chart-grid">
+              <div class="card"><h4>Route mix</h4><div id="chRoute"></div></div>
+              <div class="card"><h4>Confidence distribution</h4><div id="chConf"></div></div>
+              <div class="card span2"><h4>Latency per answer</h4><div id="chLatency"></div></div>
+              <div class="card span2"><h4>Average time per pipeline stage</h4><div id="chStages"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- SYSTEM ---------- -->
+        <section class="view" id="view-system">
+          <div class="page wide">
+            <div class="page-head">
+              <div><h2>System</h2><p>Every feature flag is read from the environment on each request, so ablation runs just flip env vars.</p></div>
+              <a class="btn" href="/docs" target="_blank" rel="noopener"><svg><use href="#i-ext"/></svg>Swagger API</a>
+            </div>
+            <div class="sys-arch card">
+              <h4>Architecture</h4>
+              <div class="arch" id="arch"></div>
+            </div>
+            <div class="flag-grid" id="flagGrid"></div>
+            <div class="card mcp-card">
+              <h4>MCP server · <code>python -m secondbrain.mcp_server.server</code></h4>
+              <p class="muted">The same agent is exposed to Claude Desktop, Cursor and any MCP client.</p>
+              <div class="mcp-tools" id="mcpTools"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
+
+  <!-- command palette -->
+  <div class="overlay" id="palette" hidden>
+    <div class="palette" role="dialog" aria-label="Command palette">
+      <div class="palette-input"><svg><use href="#i-search"/></svg><input id="paletteInput" placeholder="Type a command or a question…"></div>
+      <ul class="palette-list" id="paletteList"></ul>
+      <div class="palette-foot"><span><kbd>↑↓</kbd> navigate</span><span><kbd>Enter</kbd> run</span><span><kbd>Esc</kbd> close</span></div>
+    </div>
+  </div>
+
+  <!-- source preview -->
+  <div class="overlay" id="sourceModal" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3 id="srcTitle"></h3><button class="icon-btn" data-close><svg><use href="#i-x"/></svg></button></div>
+      <div class="modal-body" id="srcBody"></div>
+    </div>
+  </div>
+
+  <!-- tour -->
+  <div class="tour" id="tour" hidden>
+    <div class="tour-spot" id="tourSpot"></div>
+    <div class="tour-card" id="tourCard">
+      <div class="tour-step" id="tourStep"></div>
+      <h3 id="tourTitle"></h3>
+      <p id="tourText"></p>
+      <div class="tour-nav">
+        <button class="btn ghost" id="tourSkip">End tour</button>
+        <div class="row"><button class="btn" id="tourPrev">Back</button><button class="btn btn-primary" id="tourNext">Next</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+      <symbol id="i-docs" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+      <symbol id="i-memory" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a3 3 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></symbol>
+      <symbol id="i-graph" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.3 11 16.7 6M7.3 13l9.4 5"/></symbol>
+      <symbol id="i-lab" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3M7.5 15h9"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+      <symbol id="i-theme" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+      <symbol id="i-clip" viewBox="0 0 24 24"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 10v11H3V10zM7 10l5-8a3 3 0 0 1 3 3v4h5a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 21H7"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M17 14V3h4v11zM17 14l-5 8a3 3 0 0 1-3-3v-4H4a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.4 3H17"/></symbol>
+      <symbol id="i-speak" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    </defs>
+  </svg>
 
   <script src="app.js"></script>
 </body>
