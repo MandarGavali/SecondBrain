@@ -1,7 +1,7 @@
 from secondbrain.memory.short_term import ShortTermMemory
 from secondbrain.memory.long_term import LongTermMemory
 from secondbrain.core.logger import get_logger
-from secondbrain.core.exceptions import MemoryError
+from secondbrain.core.exceptions import MemoryStoreError
 
 logger = get_logger("memory.manager")
 
@@ -19,7 +19,7 @@ class MemoryManager:
             return self.short_term.get_messages(thread_id)
         except Exception as e:
             logger.exception("Failed to get short-term memory")
-            raise MemoryError(f"Short-term memory failed: {e}") from e
+            raise MemoryStoreError(f"Short-term memory failed: {e}") from e
 
     def get_long_term(self, user_id, query, limit=5):
         logger.info("Memory loading")
@@ -33,7 +33,7 @@ class MemoryManager:
             return results
         except Exception as e:
             logger.exception("Failed to get long-term memory")
-            raise MemoryError(f"Long-term memory search failed: {e}") from e
+            raise MemoryStoreError(f"Long-term memory search failed: {e}") from e
 
     def get_context(
         self,
@@ -63,18 +63,21 @@ class MemoryManager:
             return result
         except Exception as e:
             logger.exception("Failed to save long-term memory")
-            raise MemoryError(f"Long-term memory save failed: {e}") from e
+            raise MemoryStoreError(f"Long-term memory save failed: {e}") from e
 
     def format_memories(self, memories):
 
-        if not memories:
+        # Mem0 returns {"results": [...]}; older versions return a bare list.
+        results = memories.get("results", []) if isinstance(memories, dict) else (memories or [])
+
+        if not results:
             return ""
 
         lines = [
             "Known information about the user:"
         ]
 
-        for memory in memories["results"]:
+        for memory in results:
             lines.append(
                 f"- {memory['memory']}"
             )
@@ -107,4 +110,4 @@ class MemoryManager:
             return result
         except Exception as e:
             logger.exception("Failed to extract and save memory")
-            raise MemoryError(f"Memory extraction/save failed: {e}") from e
+            raise MemoryStoreError(f"Memory extraction/save failed: {e}") from e

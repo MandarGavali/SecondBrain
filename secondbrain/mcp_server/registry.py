@@ -18,10 +18,3 @@ def register_everything(mcp: FastMCP) -> None:
     register_memory_tools(mcp)
     register_resources(mcp)
     register_prompts(mcp)
-
-    # Future registrations
-    # register_search_tool(mcp)
-    # register_upload_tool(mcp)
-    # register_memory_tools(mcp)
-    # register_resources(mcp)
-    # register_prompts(mcp)

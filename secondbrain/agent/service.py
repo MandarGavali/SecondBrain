@@ -1,11 +1,21 @@
-from secondbrain.utils.logger import logger
+"""
+Service layer shared by the REST API, the CLI and the MCP server.
+
+All callers go through one lazily-compiled LangGraph instance.
+"""
+
+import threading
+from pathlib import Path
+
+from secondbrain.core.logger import get_logger
+from secondbrain.graph.agent_node import content_to_text, get_memory_manager
 from secondbrain.graph.workflow import create_graph
+from secondbrain.rag.pipeline import ingest_document
+
+logger = get_logger("agent.service")
 
 _graph = None
-
-
-from secondbrain.rag.pipeline import ingest_document
-from pathlib import Path
+_graph_lock = threading.Lock()
 
 
 def upload_document(path: str) -> dict:
@@ -13,59 +23,50 @@ def upload_document(path: str) -> dict:
     Upload a document into the SecondBrain knowledge base.
     """
 
-    chunks = ingest_document(path)
+    result = ingest_document(path)
 
     return {
         "status": "success",
         "filename": Path(path).name,
-        "chunks_indexed": chunks,
+        "chunks_indexed": result["chunks_indexed"],
     }
 
 
 def get_graph():
     global _graph
-
-    import time
-    from secondbrain.utils.logger import logger
-    logger.info(f"[TIMING] get_graph start: {time.perf_counter()}")
     if _graph is None:
-        # print("Creating LangGraph...")
-        _graph = create_graph()
-        logger.info(f"[TIMING] get_graph created: {time.perf_counter()}")
-
-    logger.info(f"[TIMING] get_graph end: {time.perf_counter()}")
+        with _graph_lock:
+            if _graph is None:
+                logger.info("Compiling LangGraph workflow")
+                _graph = create_graph()
     return _graph
 
 
 def answer_query(
     query: str,
     thread_id: str | None = None,
+    user_id: str | None = None,
 ) -> str:
+    """
+    Run one conversational turn through the agent graph.
 
-    import time
-    from secondbrain.utils.logger import logger
-    logger.info(f"[TIMING] answer_query start: {time.perf_counter()}")
-
+    thread_id scopes short-term memory (MongoDB checkpoints); user_id scopes
+    long-term memory (Mem0).  user_id defaults to thread_id.
+    """
+    thread_id = thread_id or "default"
     graph = get_graph()
-    logger.info(f"[TIMING] answer_query got graph: {time.perf_counter()}")
 
     config = {
         "configurable": {
-            "thread_id": thread_id or "default"
+            "thread_id": thread_id
         }
     }
 
-    logger.info(f"[TIMING] answer_query invoking graph: {time.perf_counter()}")
-    # result = graph.invoke(
-    #     {
-    #         "messages": [("user", query)]
-    #     },
-    #     config=config
-    # )
     try:
         result = graph.invoke(
-              {
-                "messages": [("user", query)]
+            {
+                "messages": [("user", query)],
+                "user_id": user_id or thread_id,
             },
             config=config
         )
@@ -76,31 +77,12 @@ def answer_query(
                 "Please try again later or use a different API key."
             )
         raise
-    
-    logger.info(f"[TIMING] answer_query graph invoked: {time.perf_counter()}")
 
-    logger.info(type(result["messages"][-1].content))
-    logger.info(result["messages"][-1].content)
-
-    # If content is a list, convert it to plain text
-    content = result["messages"][-1].content
-
-    if isinstance(content, list):
-        return "".join(
-            part.get("text", "")
-            for part in content
-            if isinstance(part, dict)
-        )
-
-    return str(content)
+    return content_to_text(result["messages"][-1].content)
 
 # ============================
 # Long-Term Memory Services
 # ============================
-
-from secondbrain.memory.memory_manager import MemoryManager
-
-_memory_manager = MemoryManager()
 
 
 def remember(
@@ -118,7 +100,7 @@ def remember(
         }
     ]
 
-    result = _memory_manager.save_long_term(
+    result = get_memory_manager().save_long_term(
         user_id=user_id,
         messages=messages,
     )
@@ -137,7 +119,7 @@ def list_memories(
     Return all stored memories for a user.
     """
 
-    memories = _memory_manager.long_term.get_all_memories(
+    memories = get_memory_manager().long_term.get_all_memories(
         user_id=user_id,
     )
 
@@ -151,7 +133,7 @@ def forget(
     Delete a memory from long-term storage.
     """
 
-    result = _memory_manager.long_term.delete_memory(
+    result = get_memory_manager().long_term.delete_memory(
         memory_id=memory_id,
     )
 

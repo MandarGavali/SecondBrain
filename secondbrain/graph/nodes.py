@@ -1,3 +1,13 @@
+"""
+LEGACY corrective-RAG nodes (router, retrieve, grade, rewrite, generate,
+hallucination check).
+
+These are NOT wired into the running application: the active workflow is
+the tool-calling agent graph in secondbrain/graph/workflow.py:create_graph().
+Kept for reference / future reuse; see the commented-out wiring at the top of
+workflow.py.
+"""
+
 from typing import Dict, Any
 
 from secondbrain.utils.logger import logger

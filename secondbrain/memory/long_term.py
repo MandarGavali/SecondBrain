@@ -3,6 +3,8 @@ from typing import List, Dict, Any
 
 from mem0 import Memory
 
+from secondbrain.rag.llm.gemini_llm import get_model_name
+
 
 class LongTermMemory:
     """
@@ -16,7 +18,7 @@ class LongTermMemory:
             "llm": {
                 "provider": "gemini",
                 "config": {
-                    "model": "gemini-2.5-flash",
+                    "model": get_model_name(),
                     "api_key": os.getenv("GOOGLE_API_KEY"),
                     "temperature": 0.2,
                     "max_tokens": 2048,
@@ -100,5 +102,7 @@ class LongTermMemory:
             limit=limit,
         )
 
-        context = "\n".join([memory["content"] for memory in memories])
-        return context
+        # Mem0 returns {"results": [{"memory": "...", ...}, ...]}; the old code
+        # indexed a non-existent "content" key and iterated the dict's keys.
+        results = memories.get("results", []) if isinstance(memories, dict) else memories
+        return "\n".join(memory["memory"] for memory in results)

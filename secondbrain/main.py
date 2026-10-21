@@ -3,16 +3,14 @@ load_dotenv()
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from secondbrain.api.chat import router as chat_router
+from secondbrain.api.jobs import router as jobs_router
+from secondbrain.api.upload import router as upload_router
 from secondbrain.core.exceptions import SecondBrainError
 from secondbrain.core.logger import get_logger
 
 logger = get_logger("main")
-
-from secondbrain.api.chat import router as chat_router
-from secondbrain.api.upload import router as upload_router
-from secondbrain.api.jobs import router as jobs_router
 
 app = FastAPI(
     title="SecondBrain AI"
@@ -38,8 +36,8 @@ async def secondbrain_exception_handler(request: Request, exc: SecondBrainError)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    if isinstance(exc, (StarletteHTTPException, RequestValidationError)):
-        raise exc
+    # HTTPException / validation errors never reach this handler: FastAPI
+    # routes them to their own handlers first.
     logger.exception("Unexpected error caught globally")
     return JSONResponse(
         status_code=500,
@@ -55,5 +53,3 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
-
-    

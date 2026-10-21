@@ -2,8 +2,6 @@ from langchain_core.documents import Document
 
 from secondbrain.rag.llm.gemini_llm import get_llm
 
-llm = get_llm()
-
 
 def grade_documents(query: str, documents: list[Document]) -> list[Document]:
     """
@@ -11,6 +9,7 @@ def grade_documents(query: str, documents: list[Document]) -> list[Document]:
     Only relevant documents are returned.
     """
 
+    llm = get_llm()
     filtered_docs = []
 
     for doc in documents:

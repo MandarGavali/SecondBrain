@@ -1,3 +1,9 @@
+# ---------------------------------------------------------------------------
+# LEGACY (kept for reference, not executed): the previous corrective-RAG
+# graph -- router -> retrieve -> grade -> rewrite -> generate -> hallucination
+# check.  Its node functions live in secondbrain/graph/nodes.py.  The active
+# workflow is the tool-calling agent graph in create_graph() below.
+# ---------------------------------------------------------------------------
 # from langgraph.graph import StateGraph, START, END
 
 # from graph.state import GraphState
@@ -106,15 +112,13 @@
 
 
 
-from langgraph.graph import StateGraph, START, END, MessagesState
+from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
 
 from secondbrain.graph.agent_node import agent_node
-from secondbrain.graph.tool_node import tool_node
-
-
 from secondbrain.graph.checkpointer import get_checkpointer
 from secondbrain.graph.state import AgentState
+from secondbrain.graph.tool_node import tool_node
 
 def create_graph():
     """
@@ -146,7 +150,4 @@ def create_graph():
 
     checkpointer = get_checkpointer()
     return builder.compile(checkpointer=checkpointer)
-
-
-# graph = create_graph()
 

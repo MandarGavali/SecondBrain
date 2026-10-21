@@ -1,6 +1,5 @@
 from secondbrain.utils.logger import logger
 import os
-import re
 from pathlib import Path
 from typing import List
 from langchain_community.document_loaders import PyPDFLoader

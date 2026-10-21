@@ -2,7 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from secondbrain.tools.search import search_documents
 from secondbrain.rag.llm.gemini_llm import get_llm
-from secondbrain.utils.exceptions import GenerationError, RetrievalError
+from secondbrain.utils.exceptions import GenerationError
 from secondbrain.utils.logger import logger
 
 def summarize_documents(query: str, k: int = 10) -> str:

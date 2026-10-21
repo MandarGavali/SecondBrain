@@ -1,6 +1,4 @@
-from secondbrain.utils.logger import logger
 import os
-from pathlib import Path
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 def get_embedding_model() -> GoogleGenerativeAIEmbeddings:

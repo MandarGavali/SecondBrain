@@ -1,23 +1,41 @@
-class SecondBrainException(Exception):
-    """Base exception for all custom project exceptions."""
-    pass
+"""
+Backward-compatible exception names.
 
-class RetrievalError(SecondBrainException):
-    """Raised when document retrieval fails (e.g. Qdrant or Embedding issues)."""
-    pass
+These used to be a second, separate hierarchy (SecondBrainException), so the
+API's SecondBrainError handler in main.py never caught them and retrieval
+errors raised as core.RetrieverError slipped past `except RetrievalError`.
+They now all derive from secondbrain.core.exceptions.SecondBrainError.
+"""
 
-class GenerationError(SecondBrainException):
+from secondbrain.core.exceptions import (
+    RetrieverError,
+    SecondBrainError,
+    ValidationError,
+)
+
+SecondBrainException = SecondBrainError
+
+# Same class as core.RetrieverError so either name catches retrieval failures.
+RetrievalError = RetrieverError
+
+
+class GenerationError(SecondBrainError):
     """Raised when the LLM fails to generate an answer."""
-    pass
 
-class RoutingError(SecondBrainException):
+
+class RoutingError(SecondBrainError):
     """Raised when the query router fails to determine a valid route."""
-    pass
 
-class ValidationError(SecondBrainException):
-    """Raised when the graph state is missing required fields."""
-    pass
 
-class GraphExecutionError(SecondBrainException):
+class GraphExecutionError(SecondBrainError):
     """Raised when an unexpected error occurs during graph execution."""
-    pass
+
+
+__all__ = [
+    "SecondBrainException",
+    "RetrievalError",
+    "GenerationError",
+    "RoutingError",
+    "ValidationError",
+    "GraphExecutionError",
+]

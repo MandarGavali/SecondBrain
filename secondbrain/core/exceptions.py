@@ -10,7 +10,7 @@ class RetrieverError(SecondBrainError):
     """Raised when document retrieval or Qdrant fails."""
     pass
 
-class MemoryError(SecondBrainError):
+class MemoryStoreError(SecondBrainError):
     """Raised when memory operations (MongoDB/Short-Term) fail."""
     pass
 

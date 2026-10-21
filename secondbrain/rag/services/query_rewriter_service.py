@@ -1,7 +1,5 @@
 from secondbrain.rag.llm.gemini_llm import get_llm
 
-llm = get_llm()
-
 def rewrite_query(query: str) -> str:
     """
     Rewrites the user's query to improve document retrieval.
@@ -21,6 +19,6 @@ Original Query:
 Return only the rewritten query.
 """
 
-    response = llm.invoke(prompt)
+    response = get_llm().invoke(prompt)
 
     return response.content.strip()

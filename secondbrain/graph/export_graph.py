@@ -1,7 +1,7 @@
 from secondbrain.core.logger import get_logger
+from secondbrain.graph.workflow import create_graph
+
 logger = get_logger("graph.export_graph")
-import os
-from secondbrain.graph.workflow import compile_graph_with_checkpointer
 
 def export_graph_visualization():
     """
@@ -10,7 +10,7 @@ def export_graph_visualization():
     it falls back to generating a raw Mermaid syntax (.mmd) file.
     """
     logger.info("Compiling graph...")
-    graph = compile_graph_with_checkpointer()
+    graph = create_graph()
     
     png_path = "graph.png"
     mmd_path = "graph.mmd"

@@ -1,8 +1,7 @@
-from secondbrain.utils.logger import logger
 import os
-import time
 import re
-from pathlib import Path
+import time
+
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
@@ -11,6 +10,11 @@ from secondbrain.core.logger import get_logger
 from secondbrain.core.exceptions import GeminiError
 
 logger = get_logger("rag.llm")
+
+
+def get_model_name() -> str:
+    """Gemini model used across the app; override with GEMINI_MODEL."""
+    return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 def execute_with_retry(api_func, *args, max_attempts=5, **kwargs):
     """
@@ -67,7 +71,7 @@ def get_llm() -> ChatGoogleGenerativeAI:
         raise ValueError("GOOGLE_API_KEY not found. Check your .env file.")
     # Set max_retries=10 to handle rate limits in LangChain calls
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model=get_model_name(),
         google_api_key=google_api_key,
         max_retries=10
     )
@@ -121,7 +125,7 @@ Context:
     logger.info("Sending request to Gemini")
     response = execute_with_retry(
         client.models.generate_content,
-        model="gemini-2.5-flash",
+        model=get_model_name(),
         contents=query,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt
@@ -165,7 +169,7 @@ def generate_chat_response(query: str, history: list = None) -> str:
     logger.info("Sending request to Gemini")
     response = execute_with_retry(
         client.models.generate_content,
-        model="gemini-2.5-flash",
+        model=get_model_name(),
         contents=full_prompt,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt

@@ -21,6 +21,12 @@ langchain-qdrant==1.1.0
 langgraph==1.2.6
 langgraph-checkpoint==4.1.1
 langgraph-checkpoint-mongodb==0.4.0
+langchain-text-splitters==1.1.3
+
+# =========================
+# MCP (FastMCP API is v1-only; v2 renamed it)
+# =========================
+mcp==1.30.0
 
 # =========================
 # Google AI
@@ -32,7 +38,6 @@ google-genai==2.8.0
 # =========================
 pymongo==4.16.0
 qdrant-client==1.18.0
-SQLAlchemy==2.0.51
 
 # =========================
 # Memory
@@ -43,7 +48,7 @@ mem0ai==2.0.7
 # Queue
 # =========================
 redis==6.2.0
-rq
+rq==2.12.0
 
 # =========================
 # Documents
@@ -61,3 +66,8 @@ requests==2.34.2
 # =========================
 pydantic==2.13.4
 pydantic-settings==2.14.1
+
+# =========================
+# Testing
+# =========================
+pytest==9.1.1

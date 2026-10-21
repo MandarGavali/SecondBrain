@@ -6,8 +6,25 @@ from secondbrain.tools.summarize import summarize_documents
 from secondbrain.tools.questions import generate_questions
 
 
+def _search_documents_for_agent(query: str, k: int = 5) -> str:
+    """
+    Agent-facing wrapper around search_documents.
+
+    The raw function returns LangChain Document objects, which ToolNode would
+    stringify as Python reprs. The LLM gets readable, citable text instead.
+    """
+    documents = search_documents(query=query, k=k)
+    if not documents:
+        return "No relevant documents were found in the knowledge base."
+    return "\n\n".join(
+        f"[{i}] Source: {doc.metadata.get('document_name') or doc.metadata.get('source', 'Unknown')}"
+        f" (page {doc.metadata.get('page_label', 'N/A')})\n{doc.page_content}"
+        for i, doc in enumerate(documents, start=1)
+    )
+
+
 search_tool = StructuredTool.from_function(
-    func=search_documents,
+    func=_search_documents_for_agent,
     name="search_documents",
     description=(
         "Search the indexed knowledge base and return the most "

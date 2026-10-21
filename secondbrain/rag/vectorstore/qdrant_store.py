@@ -1,5 +1,4 @@
 import os
-from secondbrain.utils.logger import logger
 from typing import List
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore

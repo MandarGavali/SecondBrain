@@ -1,3 +1,5 @@
+> **Historical document.** This describes testing of the Phase 4 corrective-RAG graph (router / grader / rewriter / hallucination checker). The running application now uses the tool-calling agent graph in `secondbrain/graph/workflow.py`. See `CHANGELOG.md` in this folder for the latest changes.
+
 # Manual Testing Guide
 
 ## 1. System Startup

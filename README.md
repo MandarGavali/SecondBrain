@@ -148,43 +148,55 @@ The following diagram illustrates the complete execution flow inside SecondBrain
 
 ## Request Flow
 
+The running workflow is a **tool-calling (ReAct-style) agent graph** built with LangGraph
+(`secondbrain/graph/workflow.py:create_graph`):
+
 ```text
-User
-   │
-   ▼
-FastAPI
-   │
-   ▼
-LangGraph Workflow
-   │
-   ├── Route Request
-   ├── Retrieve Documents
-   ├── Retrieve Memory
-   ├── Grade Documents
-   ├── Rewrite Query (if needed)
-   ├── Generate Response
-   └── Store Conversation Memory
-   │
-   ▼
-Gemini LLM
-   │
-   ▼
-Response
+User ──► FastAPI /chat  (or CLI / MCP ask_secondbrain)
+              │
+              ▼
+   LangGraph  (state checkpointed per thread_id in MongoDB = short-term memory)
+              │
+              ▼
+   ┌──────── agent node ─────────────────────────────────────────┐
+   │ 1. Search Mem0 long-term memory with the latest user message │
+   │ 2. Gemini (tools bound) decides: answer, or call a tool      │
+   └──────────────┬───────────────────────────────┬──────────────┘
+          tool call│                               │final answer
+                   ▼                               ▼
+   tools node (ToolNode)                 3. Save durable facts to Mem0
+   ├── search_documents   (Qdrant)              │
+   ├── list_documents                           ▼
+   ├── summarize_documents                   Response
+   └── generate_questions
+                   │
+                   └──────► back to agent node (loop until final answer)
 ```
 
+Long-term memory is **best-effort**: if Mem0/Qdrant is unreachable the agent still
+answers, just without personalised context.
+
+> **Earlier design.** Before this, the project used a *corrective-RAG* graph
+> (keyword router → retrieve → LLM document grader → query rewriter → generate →
+> hallucination checker). That code is still in `secondbrain/graph/nodes.py` and
+> `secondbrain/rag/services/` for reference, but it is **not** part of the running graph.
+
 ## Document Upload Flow
+
+Controlled by `UPLOAD_MODE`:
+
+- `sync` (default, used on the Render free tier, which has no background workers): `/upload` indexes the PDF inside the request and returns `chunks_indexed`.
+- `queue` (set in `docker-compose.yml`): `/upload` enqueues an RQ job and returns a `job_id`. Poll it with `GET /jobs/{job_id}`.
 
 ```text
 PDF Upload
      │
      ▼
-FastAPI
+FastAPI  (filename sanitised, saved under secondbrain/data/raw)
      │
-     ▼
-Redis Queue
+     ├── UPLOAD_MODE=sync  ──► processed in-request
      │
-     ▼
-RQ Worker
+     └── UPLOAD_MODE=queue ──► Redis Queue ──► RQ Worker
      │
      ▼
 PDF Loader
@@ -209,7 +221,7 @@ This architecture separates document ingestion from user interaction, enabling s
 
 | Category | Technologies |
 |----------|--------------|
-| **Programming Language** | Python 3.13 |
+| **Programming Language** | Python 3.12 |
 | **Backend Framework** | FastAPI |
 | **AI Framework** | LangChain, LangGraph |
 | **LLM** | Google Gemini |
@@ -223,7 +235,7 @@ This architecture separates document ingestion from user interaction, enabling s
 | **Protocol** | Model Context Protocol (MCP) |
 | **Containerization** | Docker, Docker Compose |
 | **Configuration** | Python Dotenv |
-| **Testing** | Smoke Tests |
+| **Testing** | Pytest (offline unit tests) + Smoke Tests |
 | **Version Control** | Git, GitHub |
 ---
 
@@ -233,8 +245,8 @@ This architecture separates document ingestion from user interaction, enabling s
 SecondBrain/
 │
 ├── secondbrain/
-│   ├── agent/              # Agent orchestration
-│   ├── agents/             # Specialized AI agents
+│   ├── agent/              # Agent (Gemini + tools), prompts, service layer
+│   ├── agents/             # Legacy corrective-RAG wrappers (not in the live graph)
 │   ├── api/                # FastAPI endpoints
 │   ├── cli/                # Command-line interface
 │   ├── core/               # Logging & exceptions
@@ -248,7 +260,7 @@ SecondBrain/
 │   ├── data/               # Runtime data
 │   └── main.py             # FastAPI application
 │
-├── tests/                  # Smoke tests
+├── tests/                  # Offline unit tests + live smoke test
 ├── assets/                 # README images
 ├── logs/                   # Application logs
 │
@@ -282,7 +294,7 @@ SecondBrain/
 
 Before getting started, ensure you have the following installed:
 
-- Python 3.13+
+- Python 3.12+
 - Docker & Docker Compose
 - Git
 - Google Gemini API Key
@@ -302,13 +314,18 @@ cd SecondBrain
 
 Create a `.env` file in the project root.
 
-```env
-GOOGLE_API_KEY=your_google_api_key
-
-MONGODB_URI=mongodb://localhost:27017
-QDRANT_URL=http://localhost:6333
-REDIS_URL=redis://localhost:6379
+```bash
+cp .env.example .env   # then set GOOGLE_API_KEY
 ```
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `GOOGLE_API_KEY` | — (required) | Gemini LLM + embeddings |
+| `MONGODB_URI` | `mongodb://localhost:27017` | LangGraph checkpoints (short-term memory) |
+| `QDRANT_URL` / `QDRANT_API_KEY` | `http://localhost:6333` / empty | Vector store + Mem0 memories |
+| `REDIS_URL` | `redis://localhost:6379` | RQ job queue (queue mode only) |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Model used by the agent, tools and Mem0 |
+| `UPLOAD_MODE` | `sync` | `sync` = index in-request, `queue` = background worker |
 
 ---
 
@@ -370,7 +387,7 @@ Start the FastAPI server:
 uvicorn secondbrain.main:app --reload
 ```
 
-Start the Redis worker in another terminal:
+Optional (only with `UPLOAD_MODE=queue`): start the Redis worker in another terminal:
 
 ```bash
 python -m secondbrain.queues.worker
@@ -455,6 +472,7 @@ Docker volumes are used to persist application data.
 |---------|--------|
 | `mongodb_data` | MongoDB data |
 | `qdrant_data` | Vector embeddings |
+| `shared_data` | Uploaded PDFs, shared between the API and worker containers |
 
 This ensures conversations and indexed documents remain available even after restarting the containers.
 ---
@@ -475,9 +493,10 @@ http://localhost:8000/docs
 
 | Method | Endpoint | Description |
 |---------|----------|-------------|
-| **POST** | `/upload` | Upload and index PDF documents |
-| **POST** | `/chat` | Chat with indexed documents |
-| **GET** | `/jobs/{job_id}` | Check background processing status |
+| **GET** | `/healthz` | Liveness probe |
+| **POST** | `/upload` | Upload and index a PDF (sync) or enqueue it (queue mode) |
+| **POST** | `/chat` | Chat with the agent over your documents and memory |
+| **GET** | `/jobs/{job_id}` | Background job status + result (queue mode) |
 
 ---
 
@@ -497,9 +516,33 @@ curl -X POST \
 POST /chat
 
 {
-  "query": "Summarize the uploaded document."
+  "query": "Summarize the uploaded document.",
+  "thread_id": "my-session-1"
 }
 ```
+
+`thread_id` is optional (defaults to `"default"`). Reuse it to continue a conversation.
+It also scopes long-term memory to that user/thread.
+---
+
+# 🧪 Testing
+
+**Offline unit tests** (no Gemini, Qdrant, MongoDB or Redis needed; external calls are mocked):
+
+```bash
+python -m pytest -q
+```
+
+They cover upload filename sanitisation, sync vs queue upload modes, the agent node's
+memory handling around tool calls, Mem0 response parsing, the agent search tool's
+formatting, and error mapping.
+
+**Live smoke test** (needs a real `GOOGLE_API_KEY` and running MongoDB + Qdrant):
+
+```bash
+python tests/smoke_test.py
+```
+
 ---
 
 # 🔌 Model Context Protocol (MCP) Integration
@@ -515,7 +558,7 @@ Instead of exposing only REST APIs, MCP enables AI assistants to invoke tools, r
 | `ask_secondbrain` | Query the complete RAG pipeline with memory support |
 | `search_documents` | Perform semantic search across indexed documents |
 | `upload_document` | Upload new documents to the knowledge base |
-| `memory` | Access and manage long-term memory |
+| `remember` / `forget` / `list_memories` | Manage long-term memory |
 
 ---
 

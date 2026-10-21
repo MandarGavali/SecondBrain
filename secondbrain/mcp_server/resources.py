@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from secondbrain.agent.service import list_memories
+from secondbrain.rag.llm.gemini_llm import get_model_name
 
 
 def register_resources(mcp: FastMCP):
@@ -12,7 +13,7 @@ def register_resources(mcp: FastMCP):
             "project": "SecondBrain",
             "version": "1.0",
             "framework": "LangGraph",
-            "llm": "Gemini 2.5 Flash",
+            "llm": get_model_name(),
             "vector_store": "Qdrant",
             "memory": "Mem0",
         }

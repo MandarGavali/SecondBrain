@@ -1,31 +1,32 @@
 from secondbrain.core.logger import get_logger
-logger = get_logger("queues.jobs")
 from secondbrain.rag.pipeline import ingest_document
 
+logger = get_logger("queues.jobs")
 
-def process_pdf(pdf_path: str):
+
+def process_pdf(pdf_path: str) -> dict:
     """
-    Background job responsible for processing and indexing a PDF.
+    Process and index a PDF.
 
-    This function is executed by the RQ worker.
+    Runs inside the RQ worker (UPLOAD_MODE=queue) or directly inside the
+    /upload request (UPLOAD_MODE=sync).  Returns the ingestion result dict
+    ({"chunks_indexed", "status", "message"}).
     """
-
     logger.info("=" * 60)
-    logger.info("Background PDF Processing Started")
+    logger.info("PDF Processing Started")
     logger.info(f"File: {pdf_path}")
 
     try:
-        # Call the RAG ingestion pipeline
-        chunks_indexed = ingest_document(pdf_path)
+        result = ingest_document(pdf_path)
 
-        logger.info(f"Successfully indexed {chunks_indexed} chunks.")
+        logger.info(f"Successfully indexed {result['chunks_indexed']} chunks.")
         logger.info("=" * 60)
 
-        return chunks_indexed
+        return result
 
     except Exception as e:
         logger.info("=" * 60)
-        logger.info("Background PDF Processing Failed")
+        logger.info("PDF Processing Failed")
         logger.info(f"File: {pdf_path}")
         logger.exception(f"Error: {e}")
         logger.info("=" * 60)

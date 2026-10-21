@@ -1,39 +1,41 @@
 from secondbrain.core.logger import get_logger
-logger = get_logger("rag.pipeline")
-import sys
-from pathlib import Path
-
-# Ensure the rag module is in the Python path
-
-from secondbrain.rag.services.retrieval_service import retrieve_relevant_documents
-from secondbrain.rag.services.generation_service import generate_grounded_answer
-
+from secondbrain.rag.embeddings.gemini_embeddings import get_embedding_model
 from secondbrain.rag.loaders.pdf_loader import load_pdf
 from secondbrain.rag.processors.chunker import chunk_documents
-from secondbrain.rag.embeddings.gemini_embeddings import get_embedding_model
+from secondbrain.rag.services.retrieval_service import retrieve_relevant_documents
 from secondbrain.rag.vectorstore.qdrant_store import create_vector_store
 
-def ingest_document(pdf_path: str):
-    # if not file.filename.endswith(".pdf"):
-    #     raise HTTPException(status_code=400, detail="Only PDF files are supported")
-    
-    # 1. Save the file locally
-    # file_path = UPLOAD_DIR / file.filename
-    # with open(file_path, "wb") as buffer:
-    #     shutil.copyfileobj(file.file, buffer)
-        
+logger = get_logger("rag.pipeline")
+
+
+def ingest_document(pdf_path: str) -> dict:
+    """
+    Load -> chunk -> embed -> index a PDF into Qdrant.
+
+    Returns {"chunks_indexed": int, "status": str, "message": str}.
+    """
     try:
-        # 2. Load the PDF
+        # 1. Load the PDF
         logger.info(f"Loading {pdf_path}...")
-        docs = load_pdf(pdf_path)
+        try:
+            docs = load_pdf(pdf_path)
+        except Exception as e:
+            # Corrupt / non-PDF content: surface as a client error.
+            raise ValueError(f"Could not read PDF: {e}") from e
         
-        # 3. Chunk the documents
+        # 2. Chunk the documents
         chunks = chunk_documents(docs)
+        if not chunks:
+            # e.g. a scanned/image-only PDF: Qdrant would otherwise fail
+            # with an opaque error on an empty batch.
+            raise ValueError(
+                "No extractable text found in the PDF (is it a scanned image?)."
+            )
         
-        # 4. Get embeddings
+        # 3. Get embeddings
         embedding_model = get_embedding_model()
         
-        # 5. Store in Vector Database (Qdrant)
+        # 4. Store in Vector Database (Qdrant)
         # Using create_vector_store which calls QdrantVectorStore.from_documents
         create_vector_store(chunks, embedding_model)
         
@@ -46,37 +48,40 @@ def ingest_document(pdf_path: str):
         logger.exception(f"Error processing {pdf_path}: {e}")
         raise
 
-def answer_query(query: str):
+def answer_query(query: str) -> dict:
     """
-    Orchestrates the entire RAG flow:
-    User Query -> retrieval_service -> generation_service -> Return Answer
+    Plain (non-agentic) RAG for debugging the retrieval + generation path:
+    User Query -> retrieval_service -> generation_service -> Answer.
+
+    The API and MCP server use the LangGraph agent instead
+    (secondbrain.agent.service.answer_query).
     """
+    # Imported lazily: the generation service belongs to the legacy
+    # corrective-RAG pipeline and is not needed for ingestion.
+    from secondbrain.rag.services.generation_service import generate_grounded_answer
+
     # 1. Retrieve Documents
     search_results = retrieve_relevant_documents(query=query, k=5)
 
-    # Debug Retrieval
-    for i, doc in enumerate(search_results):
-        logger.info("=" * 50)
-        logger.info(f"Chunk {i}")
-        logger.info(doc.metadata)
-        logger.info(doc.page_content[:500])
-
     # 2. Generate Answer
     answer = generate_grounded_answer(query=query, documents=search_results)
-    
-    logger.info(f"AI🤖 : {answer}")
+
+    # Pages actually used as context (previously a hard-coded [1, 4, 9, 13]).
+    pages = sorted(
+        {doc.metadata.get("page_label") for doc in search_results if doc.metadata.get("page_label")},
+        key=lambda p: (len(str(p)), str(p)),
+    )
+
+    logger.info(f"AI: {answer}")
     return {
         "answer": answer,
-        "confidence": "High",
-        "pages": [1,4,9,13]
+        "pages": pages,
     }
 
 
-
- 
-
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    load_dotenv()
     user_query = input("Ask something: ")
-    answer_query(user_query)
-
-
+    print(answer_query(user_query)["answer"])

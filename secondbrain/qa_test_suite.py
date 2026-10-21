@@ -1,8 +1,5 @@
-import os
-import sys
 import uuid
 import time
-from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 from secondbrain.core.logger import get_logger

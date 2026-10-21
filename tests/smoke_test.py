@@ -34,8 +34,8 @@ def run_smoke_tests():
 
     # Test 2: LangGraph compiled
     try:
-        from secondbrain.graph.workflow import compile_graph_with_checkpointer
-        graph = compile_graph_with_checkpointer()
+        from secondbrain.graph.workflow import create_graph
+        graph = create_graph()
         if graph:
             log_result("LangGraph compiled", True)
         else:
