@@ -1,6 +1,7 @@
 from secondbrain.core.logger import get_logger
 logger = get_logger("graph.agent_node")
 from langgraph.graph import MessagesState
+from langgraph.config import get_stream_writer
 from secondbrain.agent.agent import create_agent
 from secondbrain.memory.memory_manager import MemoryManager
 
@@ -21,10 +22,13 @@ def agent_node(state: MessagesState):
     import time
     from secondbrain.utils.logger import logger
     logger.info(f"[TIMING] agent_node start: {time.perf_counter()}")
+    # progress updates for the streaming chat endpoint (no-op when not streaming)
+    progress = get_stream_writer()
     messages = state["messages"]
     user_id = state.get("user_id", "default_user")
     last_user_message = messages[-1].content
 
+    progress({"status": "Recalling your memories"})
     logger.info(f"[TIMING] getting long-term memory start: {time.perf_counter()}")
     memories = memory_manager.get_long_term(
         user_id=user_id,
@@ -42,6 +46,7 @@ def agent_node(state: MessagesState):
     # logger.info("Memory Context:", memory_context)
 
     try:
+        progress({"status": "Thinking"})
         logger.info(f"[TIMING] agent.invoke start: {time.perf_counter()}")
         agent = get_agent()
         response = agent.invoke(
@@ -56,6 +61,7 @@ def agent_node(state: MessagesState):
         logger.exception(f"Error invoking agent: {e}")
         raise 
 
+    progress({"status": "Saving to memory"})
     logger.info(f"[TIMING] extract_and_save_memory start: {time.perf_counter()}")
     memory_manager.extract_and_save_memory(
         user_id=user_id,

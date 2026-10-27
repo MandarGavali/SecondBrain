@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecondBrain</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --side: #f9f9f9;
+    --hover: #ececec;
+    --active: #e3e3e3;
+    --fg: #0d0d0d;
+    --muted: #6b6b6b;
+    --line: #e5e5e5;
+    --bubble: #f4f4f4;
+    --accent: #0d0d0d;
+    --accent-fg: #ffffff;
+    --error: #b91c1c;
+    --ok: #15803d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #212121;
+      --side: #171717;
+      --hover: #2a2a2a;
+      --active: #323232;
+      --fg: #ececec;
+      --muted: #9b9b9b;
+      --line: #333333;
+      --bubble: #303030;
+      --accent: #ececec;
+      --accent-fg: #171717;
+      --error: #f87171;
+      --ok: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 15px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; overflow: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+  svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- sidebars ---------- */
+  aside { background: var(--side); display: flex; flex-direction: column; min-height: 0; padding: 10px; }
+  #left { border-right: 1px solid var(--line); }
+  #right { border-left: 1px solid var(--line); }
+  .side-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 9px 10px; border-radius: 10px; text-align: left;
+  }
+  .side-btn:hover { background: var(--hover); }
+  .brand { font-weight: 600; padding: 8px 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .scroll { flex: 1; overflow-y: auto; margin-top: 8px; }
+  .group { font-size: 12px; color: var(--muted); padding: 14px 10px 4px; font-weight: 500; }
+  .empty-note { color: var(--muted); font-size: 13px; padding: 10px; }
+
+  .conv { position: relative; display: flex; align-items: center; border-radius: 10px; }
+  .conv:hover { background: var(--hover); }
+  .conv.active { background: var(--active); }
+  .conv .title { flex: 1; min-width: 0; padding: 8px 10px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv .del { display: none; padding: 6px; margin-right: 4px; color: var(--muted); border-radius: 6px; }
+  .conv:hover .del { display: block; }
+  .conv .del:hover { color: var(--error); }
+
+  .doc { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; }
+  .doc:hover { background: var(--hover); }
+  .doc svg { margin-top: 3px; color: var(--muted); }
+  .doc .name { word-break: break-word; line-height: 1.35; font-size: 14px; }
+  .doc .meta { color: var(--muted); font-size: 12px; }
+  .doc.busy .meta { color: var(--fg); }
+  .doc.fail .meta { color: var(--error); }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .drop {
+    margin-top: 8px; border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px 10px;
+    text-align: center; color: var(--muted); font-size: 13px;
+  }
+  body.drag .drop { border-color: var(--fg); color: var(--fg); }
+
+  /* ---------- main ---------- */
+  main { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; min-height: 52px; }
+  .topbar .t { font-weight: 600; color: var(--muted); }
+  .icon-btn { padding: 8px; border-radius: 8px; display: none; }
+  .icon-btn:hover { background: var(--hover); }
+  #log { flex: 1; overflow-y: auto; padding: 0 16px; }
+  .wrap { max-width: 740px; margin: 0 auto; }
+  .hello { text-align: center; margin-top: 22vh; font-size: 28px; font-weight: 600; letter-spacing: -.01em; }
+  .hello small { display: block; margin-top: 8px; font-size: 15px; font-weight: 400; color: var(--muted); }
+
+  .msg { margin: 20px 0; }
+  .msg.user { display: flex; justify-content: flex-end; }
+  .msg.user .body { background: var(--bubble); padding: 9px 16px; border-radius: 20px; max-width: 80%; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.bot { display: flex; gap: 12px; }
+  .msg.bot .avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 14px; flex: none; margin-top: 1px; }
+  .msg.bot .body { min-width: 0; word-wrap: break-word; }
+  .msg.err .body { color: var(--error); }
+  .body p { margin: 0 0 .8em; } .body p:last-child { margin-bottom: 0; }
+  .body ul, .body ol { margin: 0 0 .8em; padding-left: 1.4em; }
+  .body h1, .body h2, .body h3 { margin: 1em 0 .4em; line-height: 1.3; }
+  .body h1 { font-size: 1.3em; } .body h2 { font-size: 1.15em; } .body h3 { font-size: 1.05em; }
+  .body code { background: var(--bubble); padding: .1em .35em; border-radius: 5px; font: .9em ui-monospace, Consolas, monospace; }
+  .body pre { background: var(--side); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; margin: 0 0 .8em; }
+  .body pre code { background: none; padding: 0; }
+  .body a { color: inherit; }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 3px 0; }
+  .status .ring { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--fg); border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+  .status .label { color: var(--fg); animation: pulse 1.6s ease-in-out infinite; }
+  .status .secs { font-size: 12px; opacity: .7; font-variant-numeric: tabular-nums; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  .composer { padding: 8px 16px 20px; }
+  form { max-width: 740px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px; background: var(--bubble); border-radius: 26px; padding: 8px 8px 8px 20px; }
+  textarea { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--fg); font: inherit; max-height: 180px; padding: 7px 0; }
+  textarea::placeholder { color: var(--muted); }
+  .send { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; }
+  .send:disabled { opacity: .3; cursor: default; }
+
+  /* ---------- responsive drawers ---------- */
+  .backdrop { display: none; }
+  @media (max-width: 1060px) {
+    body { grid-template-columns: 260px minmax(0, 1fr); }
+    #right { position: fixed; top: 0; bottom: 0; right: 0; width: 300px; z-index: 20; transform: translateX(100%); transition: transform .2s; }
+    #right.open { transform: none; }
+    #btn-docs { display: block; }
+  }
+  @media (max-width: 720px) {
+    body { grid-template-columns: minmax(0, 1fr); }
+    #left { position: fixed; top: 0; bottom: 0; left: 0; width: 280px; z-index: 20; transform: translateX(-100%); transition: transform .2s; }
+    #left.open { transform: none; }
+    #btn-menu { display: block; }
+    #right { max-width: 85vw; }
+  }
+  @media (max-width: 1060px) {
+    body.drawer .backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 10; }
+  }
+</style>
+</head>
+<body>
+
+<aside id="left">
+  <div class="brand">🧠 SecondBrain</div>
+  <button class="side-btn" id="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
+  <div class="scroll" id="convs"></div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <button class="icon-btn" id="btn-menu" title="Chats"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <span class="t">SecondBrain</span>
+    <button class="icon-btn" id="btn-docs" title="Documents"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button>
+  </div>
+  <div id="log"><div class="wrap" id="thread"></div></div>
+  <div class="composer">
+    <form id="form">
+      <textarea id="q" rows="1" placeholder="Ask anything about your documents" autofocus></textarea>
+      <button class="send" id="send" type="submit" title="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    </form>
+  </div>
+</main>
+
+<aside id="right">
+  <div class="brand">Documents</div>
+  <button class="side-btn" id="upload"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Upload PDF</button>
+  <input id="file" type="file" accept="application/pdf,.pdf" multiple hidden>
+  <div class="scroll" id="docs"></div>
+  <div class="drop">or drop a PDF anywhere</div>
+</aside>
+<div class="backdrop" id="backdrop"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const thread = $("thread"), log = $("log"), q = $("q"), send = $("send");
+const ICON_DOC = '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+const ICON_SPIN = '<svg class="spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>';
+const ICON_DEL = '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const newId = () => Math.floor(Math.random() * 1e9);
+let threadId = Number(store.get("threadId")) || newId();
+store.set("threadId", threadId);
+const inflight = new Set(); // thread ids waiting on an answer
+const isBusy = () => inflight.has(threadId);
+
+/* ---------- helpers ---------- */
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  let body = null;
+  try { body = await res.json(); } catch {}
+  if (!res.ok) {
+    const msg = body?.detail || body?.error?.message || res.statusText;
+    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
+  return body;
+}
+
+// tiny, escape-first markdown: code blocks, headings, lists, bold, italic, inline code, links
+function md(src) {
+  const blocks = [];
+  let s = esc(src).replace(/```[^\n]*\n([\s\S]*?)```/g, (_, c) => { blocks.push(c); return `\u0000${blocks.length - 1}\u0000`; });
+  const inline = (t) => t
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const out = []; let list = null, para = [];
+  const flushPara = () => { if (para.length) { out.push(`<p>${inline(para.join("<br>"))}</p>`); para = []; } };
+  const flushList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  for (const line of s.split("\n")) {
+    let m;
+    if (!line.trim()) { flushPara(); flushList(); }
+    else if ((m = line.match(/^(#{1,3})\s+(.*)/))) { flushPara(); flushList(); out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); }
+    else if ((m = line.match(/^\s*([-*•]|\d+[.)])\s+(.*)/))) {
+      flushPara();
+      const kind = /\d/.test(m[1]) ? "ol" : "ul";
+      if (list !== kind) { flushList(); out.push(`<${kind}>`); list = kind; }
+      out.push(`<li>${inline(m[2])}</li>`);
+    }
+    else { flushList(); para.push(line); }
+  }
+  flushPara(); flushList();
+  return out.join("").replace(/\u0000(\d+)\u0000/g, (_, i) => `<pre><code>${blocks[i].replace(/\n$/, "")}</code></pre>`);
+}
+
+function row(role, content) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  if (role === "bot") el.innerHTML = '<div class="avatar">🧠</div><div class="body"></div>';
+  else el.innerHTML = '<div class="body"></div>';
+  setBody(el, content);
+  thread.appendChild(el);
+  return el;
+}
+function setBody(el, content) {
+  const body = el.querySelector(".body");
+  if (el.classList.contains("bot") && !el.classList.contains("err")) body.innerHTML = md(content);
+  else body.textContent = content;
+}
+const toBottom = () => { log.scrollTop = log.scrollHeight; };
+
+function hello(text = "What's on your mind?") {
+  thread.innerHTML = `<div class="hello">${text}<small>Upload a PDF on the right, then ask about it.</small></div>`;
+}
+
+/* ---------- conversations ---------- */
+function bucket(iso) {
+  const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5);
+  return days <= 0 ? "Today" : days === 1 ? "Yesterday" : days <= 7 ? "Previous 7 days" : "Older";
+}
+
+async function loadConversations() {
+  let list = [];
+  try { list = await api("/conversations"); } catch (e) { $("convs").innerHTML = `<div class="empty-note">Couldn't load chats.</div>`; return; }
+  const box = $("convs");
+  box.innerHTML = "";
+  if (!list.length) { box.innerHTML = `<div class="empty-note">No conversations yet.</div>`; return; }
+  let last = "";
+  for (const c of list) {
+    const g = c.updated_at ? bucket(c.updated_at) : "Older";
+    if (g !== last) { box.insertAdjacentHTML("beforeend", `<div class="group">${g}</div>`); last = g; }
+    const el = document.createElement("div");
+    el.className = "conv" + (Number(c.thread_id) === threadId ? " active" : "");
+    el.innerHTML = `<button class="title"></button><button class="del" title="Delete chat">${ICON_DEL}</button>`;
+    el.querySelector(".title").textContent = c.title;
+    el.querySelector(".title").onclick = () => openConversation(c.thread_id);
+    el.querySelector(".del").onclick = () => removeConversation(c);
+    box.appendChild(el);
+  }
+}
+
+async function openConversation(id) {
+  threadId = Number(id) || id;
+  store.set("threadId", threadId);
+  closeDrawers();
+  send.disabled = isBusy() || !q.value.trim();
+  thread.innerHTML = "";
+  try {
+    const data = await api("/conversations/" + encodeURIComponent(id));
+    if (!data.messages.length) hello(); else data.messages.forEach((m) => row(m.role === "user" ? "user" : "bot", m.content));
+  } catch (e) { row("bot err", "Couldn't load this chat: " + e.message); }
+  toBottom();
+  loadConversations();
+}
+
+async function removeConversation(c) {
+  if (!confirm(`Delete "${c.title}"?`)) return;
+  try { await api("/conversations/" + encodeURIComponent(c.thread_id), { method: "DELETE" }); } catch (e) { return alert(e.message); }
+  if (String(c.thread_id) === String(threadId)) startNew();
+  loadConversations();
+}
+
+function startNew() {
+  threadId = newId();
+  store.set("threadId", threadId);
+  hello();
+  send.disabled = !q.value.trim();
+  closeDrawers();
+  loadConversations();
+  q.focus();
+}
+
+/* ---------- chat ---------- */
+function setStatus(el, text, t0) {
+  const body = el.querySelector(".body");
+  body.innerHTML = '<div class="status"><span class="ring"></span><span class="label"></span><span class="secs"></span></div>';
+  body.querySelector(".label").textContent = text + "…";
+  tick(el, t0);
+}
+const tick = (el, t0) => {
+  const n = el.querySelector(".secs");
+  if (!n) return;
+  const secs = Math.floor((Date.now() - t0) / 1000);
+  n.textContent = secs + "s" + (secs >= 15 ? " · taking longer than usual, the model may be rate-limited" : "");
+};
+
+async function stream(text, tid, onStatus) {
+  const res = await fetch("/chat/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: text, thread_id: tid }),
+  });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || res.statusText);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", answer = null;
+  const handle = (line) => {
+    if (!line.trim()) return;
+    const ev = JSON.parse(line);
+    if (ev.type === "status") onStatus(ev.text);
+    else if (ev.type === "answer") answer = ev.answer;
+    else if (ev.type === "error") throw new Error(ev.message);
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split(/\r?\n/); buf = lines.pop();
+    lines.forEach(handle);
+  }
+  handle(buf);
+  if (answer === null) throw new Error("No answer received");
+  return answer;
+}
+
+async function ask(text) {
+  if (thread.querySelector(".hello")) thread.innerHTML = "";
+  row("user", text);
+  const pending = row("bot", "");
+  const t0 = Date.now();
+  let label = "Thinking";
+  setStatus(pending, label, t0);
+  toBottom();
+  const timer = setInterval(() => tick(pending, t0), 1000);
+  const tid = threadId;
+  inflight.add(tid); send.disabled = true;
+  let answer, failed = false;
+  try {
+    answer = await stream(text, tid, (t) => { if (pending.isConnected) { label = t; setStatus(pending, t, t0); } });
+  } catch (e) {
+    answer = "Error: " + e.message; failed = true;
+  }
+  clearInterval(timer);
+  inflight.delete(tid);
+  // the user may have switched chats while waiting; the answer is saved server-side either way
+  if (tid === threadId) {
+    if (failed) pending.classList.add("err");
+    setBody(pending, answer);
+    send.disabled = !q.value.trim();
+    toBottom(); q.focus();
+  }
+  loadConversations();
+}
+
+$("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = q.value.trim();
+  if (!text || isBusy()) return;
+  q.value = ""; q.style.height = "auto"; send.disabled = true;
+  ask(text);
+});
+q.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("form").requestSubmit(); }
+});
+q.addEventListener("input", () => {
+  q.style.height = "auto"; q.style.height = q.scrollHeight + "px";
+  send.disabled = isBusy() || !q.value.trim();
+});
+send.disabled = true;
+$("new").onclick = startNew;
+
+/* ---------- documents ---------- */
+const fmtSize = (n) => n < 1024 ? n + " B" : n < 1048576 ? (n / 1024).toFixed(0) + " KB" : (n / 1048576).toFixed(1) + " MB";
+const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+const uploading = new Map(); // name -> {state, msg}
+
+function docRow(name, meta, cls = "", icon = ICON_DOC) {
+  const el = document.createElement("div");
+  el.className = "doc " + cls;
+  el.innerHTML = `${icon}<div><div class="name"></div><div class="meta"></div></div>`;
+  el.querySelector(".name").textContent = name;
+  el.querySelector(".meta").textContent = meta;
+  return el;
+}
+
+async function loadDocuments() {
+  const box = $("docs");
+  let docs = [];
+  try { docs = await api("/documents"); } catch { box.innerHTML = `<div class="empty-note">Couldn't load documents.</div>`; return; }
+  box.innerHTML = "";
+  for (const [name, u] of uploading) {
+    box.appendChild(u.state === "busy" ? docRow(name, "Indexing…", "busy", ICON_SPIN) : docRow(name, u.msg, "fail"));
+  }
+  if (!docs.length && !uploading.size) box.innerHTML = `<div class="empty-note">No documents yet.</div>`;
+  for (const d of docs) box.appendChild(docRow(d.name, `${fmtSize(d.size)} · ${fmtDate(d.uploaded_at)}`));
+}
+
+async function uploadPdf(f) {
+  if (!f.name.toLowerCase().endsWith(".pdf")) { uploading.set(f.name, { state: "fail", msg: "Only PDFs are supported" }); return loadDocuments(); }
+  uploading.set(f.name, { state: "busy" });
+  loadDocuments();
+  try {
+    const form = new FormData();
+    form.append("file", f);
+    await api("/upload", { method: "POST", body: form });
+    uploading.delete(f.name);
+  } catch (e) {
+    uploading.set(f.name, { state: "fail", msg: "Failed: " + e.message });
+  }
+  loadDocuments();
+}
+async function uploadAll(files) { for (const f of files) await uploadPdf(f); }
+
+$("upload").onclick = () => $("file").click();
+$("file").onchange = (e) => { uploadAll([...e.target.files]); e.target.value = ""; };
+["dragenter", "dragover"].forEach((t) => addEventListener(t, (e) => { e.preventDefault(); document.body.classList.add("drag"); }));
+["dragleave", "drop"].forEach((t) => addEventListener(t, (e) => { e.preventDefault(); document.body.classList.remove("drag"); }));
+addEventListener("drop", (e) => uploadAll([...e.dataTransfer.files]));
+
+/* ---------- drawers (small screens) ---------- */
+function closeDrawers() { $("left").classList.remove("open"); $("right").classList.remove("open"); document.body.classList.remove("drawer"); }
+function toggle(id) { const open = !$(id).classList.contains("open"); closeDrawers(); if (open) { $(id).classList.add("open"); document.body.classList.add("drawer"); } }
+$("btn-menu").onclick = () => toggle("left");
+$("btn-docs").onclick = () => toggle("right");
+$("backdrop").onclick = closeDrawers;
+
+/* ---------- boot ---------- */
+(async () => {
+  loadDocuments();
+  await openConversation(threadId);
+})();
+</script>
+</body>
+</html>
